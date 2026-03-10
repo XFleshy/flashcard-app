@@ -373,6 +373,50 @@ textarea.import-ta:focus{border-color:var(--accent2);}
 .pop-in{animation:popIn .22s ease both;}
 @keyframes slideIn{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:translateX(0);}}
 .slide-in{animation:slideIn .3s ease both;}
+/* ── QUARTER SYSTEM ── */
+.quarter-overview{margin-bottom:28px;}
+.quarter-overview-title{font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;}
+.quarters-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.quarter-card{background:var(--surface);border:1.5px solid var(--border);border-radius:13px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.quarter-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.quarter-card.active{border-color:var(--accent2);background:var(--accent-light);}
+.quarter-card.unlocked{cursor:pointer;}
+.quarter-card.locked{opacity:.45;cursor:default;}
+.quarter-card.completed{border-color:var(--teal);background:var(--teal-glow);}
+.quarter-num{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px;}
+.quarter-range{font-size:10px;color:var(--text2);margin-bottom:8px;}
+.quarter-status{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid;display:inline-block;}
+.quarter-status.done{color:var(--teal);border-color:var(--teal);}
+.quarter-status.ready{color:var(--accent2);border-color:var(--accent2);}
+.quarter-status.locked{color:var(--text3);border-color:var(--text3);}
+.quarter-status.current{color:var(--yellow);border-color:var(--yellow);}
+.flash-mode-bar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:20px;flex-wrap:wrap;}
+.flash-mode-label{font-size:12px;color:var(--text2);font-weight:600;flex:1;}
+.flash-phase-chip{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 12px;border-radius:99px;border:1px solid;}
+.flash-phase-chip.browse{color:var(--violet);border-color:var(--violet);background:rgba(192,132,252,.1);}
+.flash-phase-chip.test{color:var(--yellow);border-color:var(--yellow);background:rgba(251,191,36,.1);}
+.quarter-test-wrap{max-width:660px;margin:0 auto;}
+.qt-card{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:18px;padding:32px;margin-bottom:20px;text-align:center;}
+.qt-term{font-size:clamp(18px,3vw,26px);font-weight:700;color:#fff;margin-bottom:8px;line-height:1.3;}
+.qt-instruction{font-size:12px;color:var(--text2);margin-bottom:20px;}
+.qt-input{width:100%;padding:14px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;transition:border-color .15s;line-height:1.7;resize:vertical;min-height:90px;}
+.qt-input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px var(--accent-glow);}
+.qt-input.correct{border-color:var(--teal);color:var(--teal);}
+.qt-input.wrong{border-color:var(--red);}
+.qt-model{background:var(--surface2);border:1.5px solid var(--border2);border-radius:11px;padding:16px 18px;margin-top:12px;text-align:left;}
+.qt-model-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:6px;}
+.qt-model-text{font-size:13px;color:var(--text);line-height:1.7;}
+.qt-ai-note{font-size:11px;color:var(--text2);margin-top:8px;font-style:italic;}
+.qt-actions{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+.qt-result-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:10px;border:1px solid;font-size:13px;font-weight:500;margin-top:12px;}
+.qt-result-bar.correct{background:rgba(52,211,153,.07);border-color:var(--teal);color:var(--teal);}
+.qt-result-bar.wrong{background:var(--red-glow);border-color:var(--red);color:var(--red);}
+.qt-result-bar.similar{background:rgba(251,191,36,.08);border-color:var(--yellow);color:var(--yellow);}
+.qt-summary{text-align:center;padding:44px 24px;background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:20px;}
+.qt-summary-score{font-size:64px;font-weight:800;line-height:1;margin-bottom:6px;}
+.qt-summary-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:20px;}
+.qt-summary-breakdown{display:flex;gap:20px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;}
+.ai-checking{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);padding:10px 0;}
 @media(max-width:600px){
   .stats{grid-template-columns:repeat(2,1fr);}
   .sets-grid{grid-template-columns:1fr;}
@@ -388,6 +432,7 @@ textarea.import-ta:focus{border-color:var(--accent2);}
   .section-banner{flex-direction:column;gap:8px;}
   .auth-card{padding:28px 20px;}
   .anki-ratings{grid-template-columns:repeat(2,1fr);}
+  .quarters-grid{grid-template-columns:repeat(2,1fr);}
 }
 
 /* ── ANKI TAB ── */
@@ -801,42 +846,395 @@ function StudyView({ set, cards, progress, streak, playSound, mastered, weak, sa
   );
 }
 
-// ─── Flashcards ───────────────────────────────────────────────────────────────
+// ─── Flash Tab — Quarter System ───────────────────────────────────────────────
+// Splits cards into 4 equal quarters. Browse quarter → write test → unlock next.
+// Cumulative tests: Q2 test includes Q1+Q2 cards, Q3 includes Q1+Q2+Q3, etc.
+// AI semantic checking: Claude judges meaning-equivalence when answer isn't exact match.
+
+const PASS_THRESHOLD = 0.7; // 70% to pass a quarter test
+
+function getQuarters(cards) {
+  const total = cards.length;
+  const base  = Math.floor(total / 4);
+  const rem   = total % 4;
+  const quarters = [];
+  let start = 0;
+  for (let i = 0; i < 4; i++) {
+    const size = base + (i < rem ? 1 : 0);
+    quarters.push(cards.slice(start, start + size));
+    start += size;
+  }
+  return quarters.filter(q => q.length > 0);
+}
+
+async function checkWithAI(term, definition, userAnswer) {
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 120,
+        system: "You are a strict but fair revision assistant. Judge if a student's answer conveys the same core meaning as the model answer. Reply with ONLY valid JSON: {\"verdict\": \"correct\" | \"similar\" | \"wrong\", \"reason\": \"one short sentence\"}. 'correct' = essentially the same meaning. 'similar' = captures main idea but missing key detail. 'wrong' = incorrect or too vague.",
+        messages: [{ role: "user", content: `Term: ${term}\nModel answer: ${definition}\nStudent answer: ${userAnswer}` }],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || "").join("") || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  } catch {
+    return { verdict: "similar", reason: "Could not check automatically — you decide." };
+  }
+}
+
 function FlashTab({ cards, progress, playSound }) {
-  const [deck,setDeck]=useState(cards.map((_,i)=>i));
-  const [idx,setIdx]=useState(0);
-  const [flipped,setFlipped]=useState(false);
-  const [shuffled,setShuffled]=useState(false);
-  useEffect(()=>{setDeck(cards.map((_,i)=>i));setIdx(0);setFlipped(false);},[cards]);
+  // mode: "overview" | "browse" | "test"
+  const [mode,          setMode]          = useState("overview");
+  const [activeQuarter, setActiveQuarter] = useState(0);
+  // Per-quarter pass state stored in component (resets on tab change, persists in session)
+  const [quartersPassed, setQuartersPassed] = useState({}); // {0: true, 1: true, ...}
+
+  // Browse state
+  const [browseIdx,  setBrowseIdx]  = useState(0);
+  const [flipped,    setFlipped]    = useState(false);
+
+  // Test state
+  const [testCards,   setTestCards]   = useState([]);
+  const [testIdx,     setTestIdx]     = useState(0);
+  const [answer,      setAnswer]      = useState("");
+  const [revealed,    setRevealed]    = useState(false);
+  const [aiResult,    setAiResult]    = useState(null); // {verdict, reason}
+  const [aiChecking,  setAiChecking]  = useState(false);
+  const [testResults, setTestResults] = useState([]); // array of {card, correct}
+  const [testDone,    setTestDone]    = useState(false);
+  const taRef = useRef(null);
+
+  useEffect(() => { setMode("overview"); }, [cards]);
+
   if (!cards.length) return <Empty msg="Add cards in the Manage tab." />;
-  const card=cards[deck[idx]]; if(!card) return <Empty />;
-  const pct=Math.round(((idx+1)/deck.length)*100);
-  const go=(d)=>{playSound("nav");setFlipped(false);setTimeout(()=>setIdx(i=>(i+d+deck.length)%deck.length),flipped?120:0);};
-  const flip=()=>{playSound("flip");setFlipped(f=>!f);};
-  return (
-    <div>
-      {progress[card.id]?.mastered && <div className="mastered-pill">✦ Mastered</div>}
-      <div className="prog-wrap">
-        <div className="prog-header"><span className="prog-label">Card {idx+1} of {deck.length}</span><span className="prog-count">{pct}%</span></div>
-        <div className="prog-track"><div className="prog-bar" style={{width:`${pct}%`}}/><div className="prog-thumb" style={{left:`${Math.max(Math.min(pct,96),2)}%`}}>{idx+1}</div></div>
+
+  const quarters = getQuarters(cards);
+
+  // ── Overview ──────────────────────────────────────────────────────────────
+  if (mode === "overview") {
+    const totalPassed = Object.keys(quartersPassed).length;
+    return (
+      <div>
+        <div className="quarter-overview">
+          <div className="quarter-overview-title">
+            {totalPassed === quarters.length ? "🎉 All quarters complete!" : `Study Plan — ${cards.length} cards in ${quarters.length} quarters`}
+          </div>
+          <div className="quarters-grid">
+            {quarters.map((q, i) => {
+              const passed   = quartersPassed[i];
+              const unlocked = i === 0 || quartersPassed[i - 1];
+              const isCurrent = !passed && unlocked;
+              return (
+                <div
+                  key={i}
+                  className={`quarter-card ${passed?"completed":isCurrent?"active":"locked"}`}
+                  onClick={() => {
+                    if (!unlocked && !passed) return;
+                    setActiveQuarter(i);
+                    setBrowseIdx(0); setFlipped(false);
+                    setMode("browse");
+                    playSound("nav");
+                  }}
+                >
+                  <div className="quarter-num">Q{i + 1}</div>
+                  <div className="quarter-range">Cards {cards.indexOf(q[0])+1}–{cards.indexOf(q[q.length-1])+1}</div>
+                  <div className="quarter-range" style={{marginBottom:8}}>{q.length} cards</div>
+                  <div className={`quarter-status ${passed?"done":isCurrent?"current":"locked"}`}>
+                    {passed ? "✓ Passed" : isCurrent ? "Current" : "🔒 Locked"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {totalPassed === quarters.length && (
+            <div style={{textAlign:"center",padding:"20px 0"}}>
+              <p style={{color:"var(--text2)",fontSize:13,marginBottom:16}}>You've been through all quarters! You can revisit any quarter or do a full set test.</p>
+              <button className="btn btn-primary" onClick={() => {
+                setTestCards(shuffle([...cards]));
+                setTestIdx(0); setAnswer(""); setRevealed(false);
+                setAiResult(null); setTestResults([]); setTestDone(false);
+                setActiveQuarter(quarters.length - 1);
+                setMode("test"); playSound("nav");
+              }}>Test All {cards.length} Cards →</button>
+            </div>
+          )}
+        </div>
+        <div className="divider"/>
+        <div className="terms-title">All terms in this set</div>
+        <TermsList cards={cards} progress={progress} />
       </div>
-      <div className="card-area fade-up">
-        <div className={`card-wrap${flipped?" flipped":""}`} onClick={flip}>
-          <div className="card-face"><div className="card-chip">Term</div><div className="card-term">{card.term}</div><div className="card-hint">click to flip</div></div>
-          <div className="card-face card-back"><div className="card-chip">Definition</div><div className="card-def">{card.def}</div></div>
+    );
+  }
+
+  // ── Browse mode ───────────────────────────────────────────────────────────
+  if (mode === "browse") {
+    const qCards = quarters[activeQuarter];
+    const card   = qCards[browseIdx];
+    const pct    = Math.round(((browseIdx + 1) / qCards.length) * 100);
+    const isLast = browseIdx === qCards.length - 1;
+
+    const go = (d) => {
+      playSound("nav"); setFlipped(false);
+      setTimeout(() => setBrowseIdx(i => Math.max(0, Math.min(qCards.length - 1, i + d))), flipped ? 120 : 0);
+    };
+
+    const startTest = () => {
+      // Cumulative: test all cards up to and including this quarter
+      const cumulativeCards = quarters.slice(0, activeQuarter + 1).flat();
+      setTestCards(shuffle([...cumulativeCards]));
+      setTestIdx(0); setAnswer(""); setRevealed(false);
+      setAiResult(null); setTestResults([]); setTestDone(false);
+      setMode("test"); playSound("nav");
+    };
+
+    return (
+      <div>
+        <div className="flash-mode-bar">
+          <button className="btn btn-ghost btn-sm" onClick={() => setMode("overview")}>← Overview</button>
+          <span className="flash-mode-label">Quarter {activeQuarter + 1} of {quarters.length} — Browsing</span>
+          <span className="flash-phase-chip browse">Browse</span>
+        </div>
+
+        {progress[card?.id]?.mastered && <div className="mastered-pill">✦ Mastered</div>}
+        <div className="prog-wrap">
+          <div className="prog-header">
+            <span className="prog-label">Card {browseIdx + 1} of {qCards.length}</span>
+            <span className="prog-count">{pct}%</span>
+          </div>
+          <div className="prog-track">
+            <div className="prog-bar" style={{width:`${pct}%`}}/>
+            <div className="prog-thumb" style={{left:`${Math.max(Math.min(pct,96),2)}%`}}>{browseIdx + 1}</div>
+          </div>
+        </div>
+
+        <div className="card-area fade-up">
+          <div className={`card-wrap${flipped?" flipped":""}`} onClick={() => { playSound("flip"); setFlipped(f=>!f); }}>
+            <div className="card-face"><div className="card-chip">Term</div><div className="card-term">{card?.term}</div><div className="card-hint">click to flip</div></div>
+            <div className="card-face card-back"><div className="card-chip">Definition</div><div className="card-def">{card?.def}</div></div>
+          </div>
+        </div>
+
+        <div className="card-nav">
+          <button className="btn btn-ghost" onClick={() => go(-1)} disabled={browseIdx === 0}>← Prev</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { playSound("flip"); setFlipped(f=>!f); }}>{flipped?"Show Term":"Show Answer"}</button>
+          <button className="btn btn-ghost" onClick={() => go(1)} disabled={isLast}>Next →</button>
+        </div>
+
+        {isLast && (
+          <div style={{marginTop:24,background:"linear-gradient(135deg,rgba(124,58,237,.18),rgba(159,103,255,.1))",border:"1px solid var(--border2)",borderRadius:16,padding:"24px",textAlign:"center"}}>
+            <div style={{fontSize:20,marginBottom:8}}>✅ Quarter {activeQuarter + 1} browsed!</div>
+            <p style={{color:"var(--text2)",fontSize:13,marginBottom:16,lineHeight:1.7}}>
+              You've seen all {qCards.length} cards in this quarter.<br/>
+              Time to test yourself — you'll be tested on{" "}
+              <strong style={{color:"#fff"}}>
+                {quarters.slice(0, activeQuarter + 1).flat().length} cards
+              </strong>{activeQuarter > 0 ? " (cumulative)" : ""}.
+            </p>
+            <button className="btn btn-primary" onClick={startTest}>Test Myself Now →</button>
+            <button className="btn btn-ghost" style={{marginLeft:8}} onClick={() => { setBrowseIdx(0); setFlipped(false); }}>Review Again</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Test mode ─────────────────────────────────────────────────────────────
+  if (mode === "test") {
+    const cumulativeCards = quarters.slice(0, activeQuarter + 1).flat();
+
+    if (testDone) {
+      const correct = testResults.filter(r => r.correct).length;
+      const total   = testResults.length;
+      const pct     = Math.round((correct / total) * 100);
+      const passed  = pct >= PASS_THRESHOLD * 100;
+
+      return (
+        <div className="quarter-test-wrap fade-up">
+          <div className="flash-mode-bar">
+            <button className="btn btn-ghost btn-sm" onClick={() => setMode("overview")}>← Overview</button>
+            <span className="flash-mode-label">Quarter {activeQuarter + 1} Test — Results</span>
+          </div>
+          <div className="qt-summary">
+            <div className="qt-summary-score" style={{color:passed?"var(--teal)":pct>=50?"var(--yellow)":"var(--red)"}}>{pct}%</div>
+            <div className="qt-summary-label">Quarter {activeQuarter + 1} Test Complete</div>
+            <div className="qt-summary-breakdown">
+              <div><div style={{fontSize:28,fontWeight:800,color:"var(--teal)"}}>{correct}</div><div style={{fontSize:10,color:"var(--text2)",letterSpacing:1,textTransform:"uppercase"}}>Correct</div></div>
+              <div><div style={{fontSize:28,fontWeight:800,color:"var(--red)"}}>{total - correct}</div><div style={{fontSize:10,color:"var(--text2)",letterSpacing:1,textTransform:"uppercase"}}>Wrong</div></div>
+              <div><div style={{fontSize:28,fontWeight:800,color:"var(--violet)"}}>{total}</div><div style={{fontSize:10,color:"var(--text2)",letterSpacing:1,textTransform:"uppercase"}}>Total</div></div>
+            </div>
+            {passed ? (
+              <>
+                <div style={{color:"var(--teal)",fontWeight:700,fontSize:15,marginBottom:12}}>✓ Passed! Quarter {activeQuarter + 1} complete.</div>
+                {activeQuarter < quarters.length - 1 ? (
+                  <button className="btn btn-primary" onClick={() => {
+                    setQuartersPassed(p => ({...p, [activeQuarter]: true}));
+                    setActiveQuarter(activeQuarter + 1);
+                    setBrowseIdx(0); setFlipped(false);
+                    setMode("browse"); playSound("mastered");
+                    spawnConfetti(20);
+                  }}>Continue to Quarter {activeQuarter + 2} →</button>
+                ) : (
+                  <button className="btn btn-primary" onClick={() => {
+                    setQuartersPassed(p => ({...p, [activeQuarter]: true}));
+                    setMode("overview"); playSound("mastered"); spawnConfetti(28);
+                  }}>🎉 Complete! Back to Overview</button>
+                )}
+                <button className="btn btn-ghost" style={{marginLeft:8}} onClick={() => {
+                  setTestCards(shuffle([...cumulativeCards]));
+                  setTestIdx(0); setAnswer(""); setRevealed(false);
+                  setAiResult(null); setTestResults([]); setTestDone(false);
+                }}>Retry Test</button>
+              </>
+            ) : (
+              <>
+                <div style={{color:"var(--yellow)",fontWeight:600,fontSize:13,marginBottom:16}}>Need {Math.ceil(PASS_THRESHOLD*100)}% to pass. Review and try again!</div>
+                <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                  <button className="btn btn-primary" onClick={() => {
+                    setTestCards(shuffle([...cumulativeCards]));
+                    setTestIdx(0); setAnswer(""); setRevealed(false);
+                    setAiResult(null); setTestResults([]); setTestDone(false);
+                  }}>Retry Test</button>
+                  <button className="btn btn-ghost" onClick={() => { setBrowseIdx(0); setFlipped(false); setMode("browse"); }}>Review Cards First</button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Missed cards review */}
+          {testResults.filter(r => !r.correct).length > 0 && (
+            <div style={{marginTop:20}}>
+              <div className="weak-review-title" style={{marginBottom:10}}>✗ Cards to review</div>
+              {testResults.filter(r => !r.correct).map((r, i) => (
+                <div key={i} className="weak-row">
+                  <div className="weak-row-term">{r.card.term}</div>
+                  <div className="weak-row-def">{r.card.def}</div>
+                  {r.yourAnswer && <div style={{fontSize:11,color:"var(--red)",marginTop:4}}>Your answer: {r.yourAnswer}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const card = testCards[testIdx];
+    const tpct = Math.round((testIdx / testCards.length) * 100);
+
+    const submit = async () => {
+      if (!answer.trim() || revealed) return;
+      setRevealed(true);
+      const norm = s => s.toLowerCase().replace(/[^\w\s]/g,"").trim();
+      const exact = norm(answer) === norm(card.def);
+      if (exact) {
+        setAiResult({ verdict:"correct", reason:"Exact match!" });
+        playSound("correct");
+      } else {
+        // AI check
+        setAiChecking(true);
+        const result = await checkWithAI(card.term, card.def, answer);
+        setAiResult(result);
+        setAiChecking(false);
+        if (result.verdict === "correct") playSound("correct");
+        else if (result.verdict === "wrong") playSound("wrong");
+      }
+    };
+
+    const commitResult = (correct) => {
+      setTestResults(r => [...r, { card, correct, yourAnswer: correct ? null : answer }]);
+      if (testIdx + 1 >= testCards.length) {
+        setTestDone(true);
+        playSound("sectionEnd");
+      } else {
+        setTestIdx(i => i + 1);
+        setAnswer(""); setRevealed(false); setAiResult(null);
+        setTimeout(() => taRef.current?.focus(), 80);
+      }
+    };
+
+    return (
+      <div className="quarter-test-wrap">
+        <div className="flash-mode-bar">
+          <button className="btn btn-ghost btn-sm" onClick={() => setMode("browse")}>← Back to Browse</button>
+          <span className="flash-mode-label">Q{activeQuarter + 1} Test — {cumulativeCards.length} cards{activeQuarter > 0 ? " (cumulative)" : ""}</span>
+          <span className="flash-phase-chip test">Test</span>
+        </div>
+
+        <div className="prog-wrap">
+          <div className="prog-header">
+            <span className="prog-label">Question {testIdx + 1} of {testCards.length}</span>
+            <span className="prog-count">{testResults.filter(r=>r.correct).length} correct so far</span>
+          </div>
+          <div className="prog-track"><div className="prog-bar" style={{width:`${tpct}%`}}/></div>
+        </div>
+
+        <div className="qt-card pop-in">
+          <div className="qt-term">{card?.term}</div>
+          <div className="qt-instruction">Write the full definition from memory</div>
+          <textarea
+            ref={taRef}
+            className={`qt-input${revealed ? (aiResult?.verdict==="correct"?" correct":aiResult?.verdict==="wrong"?" wrong":"") : ""}`}
+            value={answer}
+            onChange={e => setAnswer(e.target.value)}
+            onKeyDown={e => { if (e.key==="Enter" && e.ctrlKey) submit(); }}
+            disabled={revealed}
+            placeholder="Type your definition here… (Ctrl+Enter to submit)"
+            autoFocus
+          />
+
+          {!revealed && (
+            <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:14}}>
+              <button className="btn btn-primary" disabled={!answer.trim()} onClick={submit}>Check Answer →</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => commitResult(false)}>Skip</button>
+            </div>
+          )}
+
+          {aiChecking && (
+            <div className="ai-checking"><div className="spinner"/>Checking with AI…</div>
+          )}
+
+          {revealed && aiResult && (
+            <>
+              <div className={`qt-result-bar ${aiResult.verdict==="correct"?"correct":aiResult.verdict==="similar"?"similar":"wrong"}`}>
+                <span>{aiResult.verdict==="correct"?"✓":aiResult.verdict==="similar"?"≈":"✗"}</span>
+                <span>{aiResult.reason}</span>
+              </div>
+
+              <div className="qt-model">
+                <div className="qt-model-lbl">Model Answer</div>
+                <div className="qt-model-text">{card?.def}</div>
+              </div>
+
+              <div className="qt-actions">
+                {aiResult.verdict === "correct" && (
+                  <button className="btn btn-teal" onClick={() => { spawnConfetti(8); commitResult(true); }}>✓ Got it right →</button>
+                )}
+                {aiResult.verdict === "similar" && (
+                  <>
+                    <button className="btn btn-ghost" onClick={() => { playSound("wrong"); commitResult(false); }}>✗ Mark Wrong</button>
+                    <button className="btn btn-teal" onClick={() => { playSound("correct"); spawnConfetti(6); commitResult(true); }}>✓ Close Enough</button>
+                  </>
+                )}
+                {aiResult.verdict === "wrong" && (
+                  <button className="btn btn-danger" onClick={() => commitResult(false)}>✗ Got it wrong →</button>
+                )}
+              </div>
+              {aiResult.verdict === "similar" && (
+                <div className="qt-ai-note">AI detected a similar meaning — you decide if it's close enough.</div>
+              )}
+            </>
+          )}
         </div>
       </div>
-      <div className="card-nav">
-        <button className="btn btn-ghost" onClick={()=>go(-1)}>← Prev</button>
-        <button className="btn btn-ghost btn-sm" onClick={flip}>{flipped?"Show Term":"Show Answer"}</button>
-        <button className="btn btn-ghost" onClick={()=>go(1)}>Next →</button>
-        <button className="btn btn-ghost btn-sm" onClick={()=>{if(shuffled){setDeck(cards.map((_,i)=>i));setShuffled(false);}else{setDeck(shuffle(cards.map((_,i)=>i)));setShuffled(true);}setIdx(0);setFlipped(false);playSound("nav");}}>{shuffled?"Unshuffle":"Shuffle"}</button>
-      </div>
-      <div className="divider"/>
-      <div className="terms-title">Terms in this set</div>
-      <TermsList cards={cards} progress={progress} />
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
 
 // ─── Learn ────────────────────────────────────────────────────────────────────
