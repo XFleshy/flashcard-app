@@ -387,48 +387,54 @@ textarea.import-ta:focus{border-color:var(--accent2);}
   .tf-opt{max-width:100%;}
   .section-banner{flex-direction:column;gap:8px;}
   .auth-card{padding:28px 20px;}
+  .anki-ratings{grid-template-columns:repeat(2,1fr);}
+}
+
 /* ── ANKI TAB ── */
-.anki-wrap{max-width:680px;margin:0 auto;}
-.anki-header{background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(159,103,255,.1));border:1px solid var(--border2);border-radius:14px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-.anki-counts{display:flex;gap:16px;}
-.anki-count{text-align:center;}
-.anki-count-val{font-size:22px;font-weight:800;line-height:1;}
-.anki-count-lbl{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);margin-top:2px;}
-.anki-card-wrap{perspective:1400px;margin-bottom:24px;cursor:pointer;}
-.anki-card{width:100%;min-height:280px;position:relative;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);}
-.anki-card.flipped{transform:rotateY(180deg);}
-.anki-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;border:1px solid var(--border);background:linear-gradient(135deg,var(--surface),var(--surface2));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.5);min-height:280px;}
+.anki-wrap{max-width:760px;margin:0 auto;}
+.anki-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}
+.anki-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;transition:border-color .2s;}
+.anki-stat:hover{border-color:var(--border2);}
+.anki-stat-val{font-size:28px;font-weight:800;line-height:1;margin-bottom:4px;}
+.anki-stat-lbl{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);}
+.anki-card-area{perspective:1400px;margin-bottom:20px;cursor:pointer;}
+.anki-card-wrap{width:100%;height:var(--card-h);position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);}
+.anki-card-wrap.flipped{transform:rotateY(180deg);}
+.anki-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;border:1px solid var(--border);background:linear-gradient(135deg,var(--surface),var(--surface2));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.5);}
 .anki-face-back{transform:rotateY(180deg);background:linear-gradient(135deg,var(--surface2),var(--surface3));border-color:var(--border2);}
-.anki-chip{position:absolute;top:18px;left:18px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:4px 10px;border:1px solid var(--border);border-radius:99px;}
-.anki-state-chip{position:absolute;top:18px;right:18px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:99px;border:1px solid;}
+.anki-chip{position:absolute;top:20px;left:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:4px 10px;border:1px solid var(--border);border-radius:99px;}
+.anki-state-chip{position:absolute;top:20px;right:20px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:99px;border:1px solid;}
 .anki-state-chip.new{color:var(--accent2);border-color:var(--accent2);background:var(--accent-light);}
 .anki-state-chip.learning{color:var(--yellow);border-color:var(--yellow);background:rgba(251,191,36,.1);}
 .anki-state-chip.review{color:var(--teal);border-color:var(--teal);background:var(--teal-glow);}
-.anki-term{font-size:clamp(22px,4vw,36px);font-weight:700;color:#fff;line-height:1.3;}
-.anki-def{font-size:clamp(13px,2vw,16px);color:var(--text);line-height:1.8;max-width:560px;}
-.anki-hint{position:absolute;bottom:18px;font-size:11px;color:var(--text3);}
-.anki-show-btn{display:flex;justify-content:center;margin-bottom:16px;}
-.anki-ratings{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.anki-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border-radius:12px;border:1.5px solid;font-family:'Sora',sans-serif;cursor:pointer;transition:all .18s;}
-.anki-btn:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.3);}
-.anki-btn-interval{font-size:11px;font-weight:700;letter-spacing:.5px;}
-.anki-btn-label{font-size:12px;font-weight:600;}
-.anki-btn.again{background:rgba(248,113,113,.1);border-color:var(--red);color:var(--red);}
-.anki-btn.again:hover{background:rgba(248,113,113,.2);}
-.anki-btn.hard{background:rgba(251,191,36,.1);border-color:var(--yellow);color:var(--yellow);}
-.anki-btn.hard:hover{background:rgba(251,191,36,.2);}
-.anki-btn.good{background:var(--accent-light);border-color:var(--accent2);color:var(--accent2);}
-.anki-btn.good:hover{background:rgba(159,103,255,.25);}
-.anki-btn.easy{background:var(--teal-glow);border-color:var(--teal);color:var(--teal);}
-.anki-btn.easy:hover{background:rgba(52,211,153,.25);}
-.anki-done{text-align:center;padding:60px 24px;}
-.anki-done-icon{font-size:60px;margin-bottom:16px;}
+.anki-term{font-size:clamp(22px,4vw,38px);font-weight:700;color:#fff;line-height:1.25;}
+.anki-def{font-size:clamp(13px,2vw,16px);color:var(--text);line-height:1.8;max-width:580px;}
+.anki-hint{position:absolute;bottom:20px;font-size:11px;color:var(--text3);letter-spacing:.5px;}
+.anki-nav{display:flex;justify-content:center;margin-bottom:16px;}
+.anki-ratings{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.anki-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:14px 10px;border-radius:13px;border:1.5px solid;font-family:'Sora',sans-serif;cursor:pointer;transition:all .18s;background:transparent;}
+.anki-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3);}
+.anki-btn-interval{font-size:12px;font-weight:800;letter-spacing:.5px;}
+.anki-btn-label{font-size:11px;font-weight:600;opacity:.85;}
+.anki-btn.again{border-color:var(--red);color:var(--red);}
+.anki-btn.again:hover{background:var(--red-glow);}
+.anki-btn.hard{border-color:var(--yellow);color:var(--yellow);}
+.anki-btn.hard:hover{background:rgba(251,191,36,.1);}
+.anki-btn.good{border-color:var(--accent2);color:var(--accent2);}
+.anki-btn.good:hover{background:var(--accent-light);}
+.anki-btn.easy{border-color:var(--teal);color:var(--teal);}
+.anki-btn.easy:hover{background:var(--teal-glow);}
+.anki-meta{text-align:center;font-size:11px;color:var(--text3);margin-top:4px;}
+.anki-done{text-align:center;padding:52px 24px;background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:20px;}
+.anki-done-icon{font-size:64px;margin-bottom:12px;}
 .anki-done-title{font-size:24px;font-weight:800;color:#fff;margin-bottom:8px;}
-.anki-done-sub{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:24px;}
-.anki-tab-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:99px;background:var(--red);color:#fff;font-size:9px;font-weight:800;margin-left:4px;vertical-align:middle;}
+.anki-done-sub{font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:24px;}
+.anki-session-row{display:flex;gap:20px;justify-content:center;margin-bottom:28px;flex-wrap:wrap;}
+.anki-session-val{font-size:26px;font-weight:800;}
+.anki-session-lbl{font-size:10px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.anki-count-val{font-size:22px;font-weight:800;line-height:1;}
 }
 `;
-
 
 // ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
 function AuthScreen({ onAuth }) {
@@ -1138,152 +1144,133 @@ function applyRating(card, rating) {
 
 // ─── Anki Tab ─────────────────────────────────────────────────────────────────
 function AnkiTab({ cards, userId, setId, playSound }) {
-  const [ankiData,   setAnkiData]   = useState({}); // card_id → anki row
-  const [queue,      setQueue]      = useState([]);
-  const [qIdx,       setQIdx]       = useState(0);
-  const [flipped,    setFlipped]    = useState(false);
-  const [loading,    setLoading]    = useState(true);
+  const [ankiData,     setAnkiData]     = useState({});
+  const [queue,        setQueue]        = useState([]);
+  const [qIdx,         setQIdx]         = useState(0);
+  const [flipped,      setFlipped]      = useState(false);
+  const [loading,      setLoading]      = useState(true);
   const [sessionStats, setSessionStats] = useState({ again:0, hard:0, good:0, easy:0 });
-  const [done,       setDone]       = useState(false);
+  const [done,         setDone]         = useState(false);
 
-  // Load anki progress from Supabase
   useEffect(() => {
     if (!userId || !setId || !cards.length) { setLoading(false); return; }
-    supabase.from("anki_progress")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("set_id", setId)
+    supabase.from("anki_progress").select("*").eq("user_id", userId).eq("set_id", setId)
       .then(({ data }) => {
         const map = {};
-        (data || []).forEach(r => { map[r.card_id] = r; });
+        (data||[]).forEach(r => { map[r.card_id] = r; });
         setAnkiData(map);
         buildQueue(cards, map);
         setLoading(false);
       });
   }, [userId, setId, cards.length]);
 
-  const buildQueue = (cards, data) => {
+  const buildQueue = (allCards, data) => {
     const now = Date.now();
-    // Due cards: review/learning cards whose due_at has passed
-    const due = cards.filter(c => {
+    const due = allCards.filter(c => {
       const d = data[c.id];
-      if (!d) return false;
-      if (d.anki_state === "new") return false;
-      return new Date(d.anki_due_at).getTime() <= now;
+      return d && d.anki_state !== "new" && new Date(d.anki_due_at).getTime() <= now;
     });
-    // New cards: never seen
-    const newCards = cards.filter(c => !data[c.id]);
-    // Order: due first (learning before review), then new
+    const newCards = allCards.filter(c => !data[c.id]);
     const learning = due.filter(c => data[c.id]?.anki_state === "learning");
     const review   = due.filter(c => data[c.id]?.anki_state === "review");
     const q = [...learning, ...shuffle(review), ...shuffle(newCards)];
-    setQueue(q);
-    setQIdx(0);
-    setFlipped(false);
-    setDone(q.length === 0);
+    setQueue(q); setQIdx(0); setFlipped(false); setDone(q.length === 0);
   };
 
   const currentCard = queue[qIdx];
-  const currentData = currentCard ? (ankiData[currentCard.id] || { anki_state:"new", anki_step:0, anki_interval_days:0, anki_ease:STARTING_EASE }) : null;
-  const intervals   = currentData ? computeNextIntervals(currentData) : null;
+  const currentData = currentCard
+    ? (ankiData[currentCard.id] || { anki_state:"new", anki_step:0, anki_interval_days:0, anki_ease:STARTING_EASE })
+    : null;
+  const intervals = currentData ? computeNextIntervals(currentData) : null;
 
   const rate = async (rating) => {
     if (!currentCard || !flipped) return;
-    playSound(rating === "again" ? "wrong" : rating === "easy" ? "mastered" : "correct");
-    if (rating === "easy" || rating === "good") spawnConfetti(rating === "easy" ? 16 : 8);
+    playSound(rating==="again"?"wrong":rating==="easy"?"mastered":"correct");
+    if (rating==="easy") spawnConfetti(16);
+    else if (rating==="good") spawnConfetti(6);
 
     const updated = applyRating(currentData, rating);
-    const row = {
-      user_id: userId, set_id: setId, card_id: currentCard.id,
-      ...updated,
-    };
-
-    // Save to Supabase
-    await supabase.from("anki_progress").upsert(row, { onConflict: "user_id,set_id,card_id" });
+    const row = { user_id:userId, set_id:setId, card_id:currentCard.id, ...updated };
+    await supabase.from("anki_progress").upsert(row, { onConflict:"user_id,set_id,card_id" });
 
     const newData = { ...ankiData, [currentCard.id]: row };
     setAnkiData(newData);
-    setSessionStats(s => ({ ...s, [rating]: s[rating] + 1 }));
+    setSessionStats(s => ({ ...s, [rating]: s[rating]+1 }));
     setFlipped(false);
 
-    // If "again" on a review card or learning — re-insert into queue shortly ahead
     if (rating === "again") {
       const nq = [...queue];
-      nq.splice(Math.min(qIdx + 2, nq.length), 0, currentCard);
+      nq.splice(Math.min(qIdx+2, nq.length), 0, currentCard);
       setQueue(nq);
-      setTimeout(() => setQIdx(i => i + 1), 300);
+      setTimeout(() => setQIdx(i => i+1), 320);
     } else {
-      const nextIdx = qIdx + 1;
-      if (nextIdx >= queue.length) {
-        setDone(true);
-      } else {
-        setTimeout(() => setQIdx(nextIdx), 300);
-      }
+      const ni = qIdx + 1;
+      if (ni >= queue.length) setDone(true);
+      else setTimeout(() => setQIdx(ni), 320);
     }
   };
 
   if (!cards.length) return <Empty msg="Add cards in the Manage tab to use Anki mode." />;
-  if (loading) return <div className="loading"><div className="spinner"/><span>Loading your Anki progress…</span></div>;
+  if (loading) return <div className="loading"><div className="spinner"/><span>Loading Anki progress…</span></div>;
 
-  // Count due + new for header
   const now = Date.now();
-  const dueCount = cards.filter(c => {
+  const newCount      = cards.filter(c => !ankiData[c.id]).length;
+  const learningCount = cards.filter(c => ankiData[c.id]?.anki_state === "learning").length;
+  const dueCount      = cards.filter(c => {
     const d = ankiData[c.id];
-    if (!d || d.anki_state === "new") return false;
-    return new Date(d.anki_due_at).getTime() <= now;
+    return d && d.anki_state !== "new" && new Date(d.anki_due_at).getTime() <= now;
   }).length;
-  const newCount  = cards.filter(c => !ankiData[c.id]).length;
-  const totalDone = Object.values(sessionStats).reduce((a,b)=>a+b,0);
+  const reviewedCount = cards.filter(c => ankiData[c.id]?.anki_state === "review").length;
+  const totalDone     = Object.values(sessionStats).reduce((a,b)=>a+b,0);
 
-  if (done) {
-    return (
-      <div className="anki-wrap fade-up">
-        <div className="anki-done">
-          <div className="anki-done-icon">🎉</div>
-          <div className="anki-done-title">All done for now!</div>
-          <div className="anki-done-sub">
-            You reviewed <strong style={{color:"#fff"}}>{totalDone}</strong> cards this session.<br/>
-            Again: <span style={{color:"var(--red)"}}>{sessionStats.again}</span> · Hard: <span style={{color:"var(--yellow)"}}>{sessionStats.hard}</span> · Good: <span style={{color:"var(--accent2)"}}>{sessionStats.good}</span> · Easy: <span style={{color:"var(--teal)"}}>{sessionStats.easy}</span><br/><br/>
-            Your next cards are scheduled — come back later when they're due.
-          </div>
-          <button className="btn btn-primary" onClick={() => buildQueue(cards, ankiData)}>Check for More</button>
-        </div>
+  // ── Done screen ──
+  if (done) return (
+    <div className="anki-wrap fade-up">
+      <div className="anki-stats">
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--accent2)"}}>{newCount}</div><div className="anki-stat-lbl">New</div></div>
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--yellow)"}}>{learningCount}</div><div className="anki-stat-lbl">Learning</div></div>
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--teal)"}}>{dueCount}</div><div className="anki-stat-lbl">Due</div></div>
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--violet)"}}>{reviewedCount}</div><div className="anki-stat-lbl">Review</div></div>
       </div>
-    );
-  }
+      <div className="anki-done">
+        <div className="anki-done-icon">🎉</div>
+        <div className="anki-done-title">All done for now!</div>
+        <div className="anki-done-sub">
+          You reviewed <strong style={{color:"#fff"}}>{totalDone}</strong> cards this session.
+        </div>
+        <div className="anki-session-row">
+          <div><div className="anki-session-val" style={{color:"var(--red)"}}>{sessionStats.again}</div><div className="anki-stat-lbl">Again</div></div>
+          <div><div className="anki-session-val" style={{color:"var(--yellow)"}}>{sessionStats.hard}</div><div className="anki-stat-lbl">Hard</div></div>
+          <div><div className="anki-session-val" style={{color:"var(--accent2)"}}>{sessionStats.good}</div><div className="anki-stat-lbl">Good</div></div>
+          <div><div className="anki-session-val" style={{color:"var(--teal)"}}>{sessionStats.easy}</div><div className="anki-stat-lbl">Easy</div></div>
+        </div>
+        <div style={{fontSize:12,color:"var(--text2)",marginBottom:20}}>Your next cards are scheduled — come back later when they're due.</div>
+        <button className="btn btn-primary" onClick={() => buildQueue(cards, ankiData)}>Check for More</button>
+      </div>
+    </div>
+  );
 
   const state = currentData?.anki_state || "new";
 
   return (
     <div className="anki-wrap">
-      {/* Header counts */}
-      <div className="anki-header">
-        <div className="anki-counts">
-          <div className="anki-count">
-            <div className="anki-count-val" style={{color:"var(--accent2)"}}>{newCount}</div>
-            <div className="anki-count-lbl">New</div>
-          </div>
-          <div className="anki-count">
-            <div className="anki-count-val" style={{color:"var(--yellow)"}}>{cards.filter(c=>ankiData[c.id]?.anki_state==="learning").length}</div>
-            <div className="anki-count-lbl">Learning</div>
-          </div>
-          <div className="anki-count">
-            <div className="anki-count-val" style={{color:"var(--teal)"}}>{dueCount}</div>
-            <div className="anki-count-lbl">Due</div>
-          </div>
-        </div>
-        <div style={{fontSize:12,color:"var(--text2)"}}>{qIdx} of {queue.length} this session</div>
+      {/* Stats row — same style as other tabs but with Anki-specific counts */}
+      <div className="anki-stats">
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--accent2)"}}>{newCount}</div><div className="anki-stat-lbl">New</div></div>
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--yellow)"}}>{learningCount}</div><div className="anki-stat-lbl">Learning</div></div>
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--teal)"}}>{dueCount}</div><div className="anki-stat-lbl">Due</div></div>
+        <div className="anki-stat"><div className="anki-stat-val" style={{color:"var(--violet)"}}>{queue.length - qIdx}</div><div className="anki-stat-lbl">Remaining</div></div>
       </div>
 
-      {/* Card */}
-      <div className="anki-card-wrap" onClick={!flipped ? () => { setFlipped(true); playSound("flip"); } : undefined}>
-        <div className={`anki-card${flipped?" flipped":""}`}>
+      {/* Card — identical flip mechanic to Flashcards tab */}
+      <div className="anki-card-area" onClick={!flipped ? ()=>{setFlipped(true);playSound("flip");} : undefined}>
+        <div className={`anki-card-wrap${flipped?" flipped":""}`}>
           {/* Front */}
           <div className="anki-face">
             <div className="anki-chip">Term</div>
             <div className={`anki-state-chip ${state}`}>{state}</div>
             <div className="anki-term">{currentCard?.term}</div>
-            {!flipped && <div className="anki-hint">click to reveal answer</div>}
+            <div className="anki-hint">click to reveal answer</div>
           </div>
           {/* Back */}
           <div className="anki-face anki-face-back">
@@ -1294,34 +1281,34 @@ function AnkiTab({ cards, userId, setId, playSound }) {
         </div>
       </div>
 
-      {/* Show answer button or rating buttons */}
+      {/* Controls */}
       {!flipped ? (
-        <div className="anki-show-btn">
-          <button className="btn btn-primary" onClick={() => { setFlipped(true); playSound("flip"); }}>
+        <div className="anki-nav">
+          <button className="btn btn-primary" onClick={()=>{setFlipped(true);playSound("flip");}}>
             Show Answer
           </button>
         </div>
       ) : (
-        <div className="anki-ratings">
-          {[
-            { key:"again", label:"Again", cls:"again" },
-            { key:"hard",  label:"Hard",  cls:"hard"  },
-            { key:"good",  label:"Good",  cls:"good"  },
-            { key:"easy",  label:"Easy",  cls:"easy"  },
-          ].map(({ key, label, cls }) => (
-            <button key={key} className={`anki-btn ${cls}`} onClick={() => rate(key)}>
-              <span className="anki-btn-interval">{formatInterval(intervals[key])}</span>
-              <span className="anki-btn-label">{label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Interval info */}
-      {flipped && currentData?.anki_state === "review" && (
-        <div style={{textAlign:"center",marginTop:12,fontSize:11,color:"var(--text3)"}}>
-          Current interval: {currentData.anki_interval_days}d · Ease: {((currentData.anki_ease||STARTING_EASE)*100).toFixed(0)}%
-        </div>
+        <>
+          <div className="anki-ratings">
+            {[
+              { key:"again", label:"Again", cls:"again" },
+              { key:"hard",  label:"Hard",  cls:"hard"  },
+              { key:"good",  label:"Good",  cls:"good"  },
+              { key:"easy",  label:"Easy",  cls:"easy"  },
+            ].map(({ key, label, cls }) => (
+              <button key={key} className={`anki-btn ${cls}`} onClick={() => rate(key)}>
+                <span className="anki-btn-interval">{formatInterval(intervals[key])}</span>
+                <span className="anki-btn-label">{label}</span>
+              </button>
+            ))}
+          </div>
+          {currentData?.anki_state === "review" && (
+            <div className="anki-meta">
+              Interval: {currentData.anki_interval_days}d · Ease: {((currentData.anki_ease||STARTING_EASE)*100).toFixed(0)}%
+            </div>
+          )}
+        </>
       )}
     </div>
   );
