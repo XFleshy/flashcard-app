@@ -542,13 +542,14 @@ function AuthScreen({ onAuth }) {
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [session,      setSession]      = useState(undefined); // undefined = loading
+  const [session,      setSession]      = useState(undefined);
   const [sets,         setSets]         = useState([]);
   const [activeSetId,  setActiveSetId]  = useState(null);
   const [progress,     setProgress]     = useState({});
   const [streak,       setStreak]       = useState(0);
+  const [flashState,   setFlashState]   = useState({ quartersPassed: {}, activeQuarter: 0, browseIdx: 0 });
   const [soundOn,      setSoundOn]      = useState(true);
-  const [syncStatus,   setSyncStatus]   = useState("ok"); // "ok"|"syncing"|"err"
+  const [syncStatus,   setSyncStatus]   = useState("ok");
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingSet,   setEditingSet]   = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -585,6 +586,9 @@ export default function App() {
   // ── Load progress for active set ──────────────────────────────────────────
   useEffect(() => {
     if (!session?.user || !activeSetId) return;
+    setProgress({});
+    setStreak(0);
+    setFlashState({ quartersPassed: {}, activeQuarter: 0, browseIdx: 0 });
     loadProgress(activeSetId);
   }, [activeSetId, session?.user?.id]);
 
@@ -597,6 +601,9 @@ export default function App() {
     }
     const { data: sd } = await supabase.from("streaks").select("value").eq("set_id", setId).eq("user_id", session.user.id).maybeSingle();
     setStreak(sd?.value || 0);
+    // Load flash quarter progress
+    const { data: fp } = await supabase.from("flash_progress").select("*").eq("set_id", setId).eq("user_id", session.user.id).maybeSingle();
+    setFlashState(fp ? { quartersPassed: fp.quarters_passed || {}, activeQuarter: fp.active_quarter || 0, browseIdx: fp.browse_idx || 0 } : { quartersPassed: {}, activeQuarter: 0, browseIdx: 0 });
   };
 
   // ── Save progress (upsert per card) ───────────────────────────────────────
@@ -620,7 +627,22 @@ export default function App() {
     } catch { setSyncStatus("err"); }
   }, [session?.user?.id, activeSetId]);
 
-  // ── Set CRUD ───────────────────────────────────────────────────────────────
+  // ── Save flash quarter state ───────────────────────────────────────────────
+  const saveFlashState = useCallback(async (updates) => {
+    const next = { ...flashState, ...updates };
+    setFlashState(next);
+    setSyncStatus("syncing");
+    try {
+      await supabase.from("flash_progress").upsert({
+        user_id: session.user.id,
+        set_id: activeSetId,
+        quarters_passed: next.quartersPassed,
+        active_quarter: next.activeQuarter,
+        browse_idx: next.browseIdx,
+      }, { onConflict: "user_id,set_id" });
+      setSyncStatus("ok");
+    } catch { setSyncStatus("err"); }
+  }, [session?.user?.id, activeSetId, flashState]);
   const createSet = async ({ name, emoji, color }) => {
     const ns = { id: uid(), user_id: session.user.id, name, emoji, color, raw: SAMPLE_RAW, created_at: new Date().toISOString() };
     const { error } = await supabase.from("sets").insert(ns);
@@ -648,7 +670,8 @@ export default function App() {
   const resetSetProgress = async (id) => {
     await supabase.from("progress").delete().eq("set_id", id).eq("user_id", session.user.id);
     await supabase.from("streaks").delete().eq("set_id", id).eq("user_id", session.user.id);
-    if (activeSetId===id) { setProgress({}); setStreak(0); }
+    await supabase.from("flash_progress").delete().eq("set_id", id).eq("user_id", session.user.id);
+    if (activeSetId===id) { setProgress({}); setStreak(0); setFlashState({ quartersPassed: {}, activeQuarter: 0, browseIdx: 0 }); }
   };
 
   const signOut = () => supabase.auth.signOut();
@@ -739,6 +762,7 @@ export default function App() {
           set={activeSet} cards={cards} progress={progress} streak={streak}
           playSound={playSound} mastered={mastered} weak={weak}
           saveProgress={saveProgress} session={session}
+          flashState={flashState} saveFlashState={saveFlashState}
           onUpdateRaw={r=>updateSetRaw(activeSetId,r)}
           onResetProgress={()=>resetSetProgress(activeSetId)}
           onRenameSet={()=>setEditingSet(activeSet)}
@@ -823,7 +847,7 @@ function SetModal({ title, initial, onSave, onClose }) {
 
 // ─── Study View ───────────────────────────────────────────────────────────────
 const STUDY_TABS = ["Flashcards","Learn","Anki","Exam","Test","Manage"];
-function StudyView({ set, cards, progress, streak, playSound, mastered, weak, saveProgress, onUpdateRaw, onResetProgress, onRenameSet, session }) {
+function StudyView({ set, cards, progress, streak, playSound, mastered, weak, saveProgress, onUpdateRaw, onResetProgress, onRenameSet, session, flashState, saveFlashState }) {
   const [tab, setTab] = useState("Learn");
   return (
     <>
@@ -835,7 +859,7 @@ function StudyView({ set, cards, progress, streak, playSound, mastered, weak, sa
           <div className="stat-card"><div className="stat-val" style={{color:"var(--red)"}}>{weak}</div><div className="stat-lbl">Weak</div></div>
           <div className="stat-card"><div className="stat-val" style={{color:"var(--yellow)"}}>{streak}</div><div className="stat-lbl">Streak</div></div>
         </div>
-        {tab==="Flashcards" && <FlashTab cards={cards} progress={progress} playSound={playSound} />}
+        {tab==="Flashcards" && <FlashTab cards={cards} progress={progress} playSound={playSound} flashState={flashState} saveFlashState={saveFlashState} />}
         {tab==="Learn"      && <LearnTab cards={cards} progress={progress} saveProgress={saveProgress} streak={streak} playSound={playSound} />}
         {tab==="Anki"       && <AnkiTab  cards={cards} userId={session?.user?.id} setId={set?.id} playSound={playSound} />}
         {tab==="Exam"       && <ExamTab  cards={cards} progress={progress} saveProgress={saveProgress} streak={streak} playSound={playSound} />}
@@ -888,33 +912,50 @@ async function checkWithAI(term, definition, userAnswer) {
   }
 }
 
-function FlashTab({ cards, progress, playSound }) {
+function FlashTab({ cards, progress, playSound, flashState, saveFlashState }) {
   // mode: "overview" | "browse" | "test"
-  const [mode,          setMode]          = useState("overview");
-  const [activeQuarter, setActiveQuarter] = useState(0);
-  // Per-quarter pass state stored in component (resets on tab change, persists in session)
-  const [quartersPassed, setQuartersPassed] = useState({}); // {0: true, 1: true, ...}
+  const [mode, setMode] = useState("overview");
+
+  // Read persisted state — quarter unlock progress, which quarter is active, browse position
+  const quartersPassed  = flashState.quartersPassed  || {};
+  const activeQuarter   = flashState.activeQuarter   || 0;
+  const savedBrowseIdx  = flashState.browseIdx       || 0;
 
   // Browse state
-  const [browseIdx,  setBrowseIdx]  = useState(0);
-  const [flipped,    setFlipped]    = useState(false);
+  const [browseIdx, setBrowseIdx] = useState(savedBrowseIdx);
+  const [flipped,   setFlipped]   = useState(false);
 
   // Test state
   const [testCards,   setTestCards]   = useState([]);
   const [testIdx,     setTestIdx]     = useState(0);
   const [answer,      setAnswer]      = useState("");
   const [revealed,    setRevealed]    = useState(false);
-  const [aiResult,    setAiResult]    = useState(null); // {verdict, reason}
+  const [aiResult,    setAiResult]    = useState(null);
   const [aiChecking,  setAiChecking]  = useState(false);
-  const [testResults, setTestResults] = useState([]); // array of {card, correct}
+  const [testResults, setTestResults] = useState([]);
   const [testDone,    setTestDone]    = useState(false);
   const taRef = useRef(null);
 
-  useEffect(() => { setMode("overview"); }, [cards]);
+  // Sync browseIdx FROM flashState when it loads (e.g. after page refresh)
+  useEffect(() => {
+    setBrowseIdx(flashState.browseIdx || 0);
+  }, [flashState.browseIdx]);
 
   if (!cards.length) return <Empty msg="Add cards in the Manage tab." />;
 
   const quarters = getQuarters(cards);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  const goToQuarter = (qi) => {
+    saveFlashState({ activeQuarter: qi, browseIdx: 0 });
+    setBrowseIdx(0); setFlipped(false); setMode("browse");
+    playSound("nav");
+  };
+
+  const passQuarter = (qi) => {
+    const next = { ...quartersPassed, [qi]: true };
+    saveFlashState({ quartersPassed: next, activeQuarter: qi });
+  };
 
   // ── Overview ──────────────────────────────────────────────────────────────
   if (mode === "overview") {
@@ -923,30 +964,27 @@ function FlashTab({ cards, progress, playSound }) {
       <div>
         <div className="quarter-overview">
           <div className="quarter-overview-title">
-            {totalPassed === quarters.length ? "🎉 All quarters complete!" : `Study Plan — ${cards.length} cards in ${quarters.length} quarters`}
+            {totalPassed === quarters.length
+              ? "🎉 All quarters complete!"
+              : `Study Plan — ${cards.length} cards across ${quarters.length} quarters`}
           </div>
           <div className="quarters-grid">
             {quarters.map((q, i) => {
-              const passed   = quartersPassed[i];
-              const unlocked = i === 0 || quartersPassed[i - 1];
+              const passed   = !!quartersPassed[i];
+              const unlocked = i === 0 || !!quartersPassed[i - 1];
               const isCurrent = !passed && unlocked;
+              const globalStart = quarters.slice(0, i).reduce((a, x) => a + x.length, 0);
               return (
                 <div
                   key={i}
-                  className={`quarter-card ${passed?"completed":isCurrent?"active":"locked"}`}
-                  onClick={() => {
-                    if (!unlocked && !passed) return;
-                    setActiveQuarter(i);
-                    setBrowseIdx(0); setFlipped(false);
-                    setMode("browse");
-                    playSound("nav");
-                  }}
+                  className={`quarter-card ${passed ? "completed" : isCurrent ? "active" : "locked"}`}
+                  onClick={() => { if (!unlocked && !passed) return; goToQuarter(i); }}
                 >
                   <div className="quarter-num">Q{i + 1}</div>
-                  <div className="quarter-range">Cards {cards.indexOf(q[0])+1}–{cards.indexOf(q[q.length-1])+1}</div>
+                  <div className="quarter-range">Cards {globalStart + 1}–{globalStart + q.length}</div>
                   <div className="quarter-range" style={{marginBottom:8}}>{q.length} cards</div>
-                  <div className={`quarter-status ${passed?"done":isCurrent?"current":"locked"}`}>
-                    {passed ? "✓ Passed" : isCurrent ? "Current" : "🔒 Locked"}
+                  <div className={`quarter-status ${passed ? "done" : isCurrent ? "current" : "locked"}`}>
+                    {passed ? "✓ Passed" : isCurrent ? "▶ Current" : "🔒 Locked"}
                   </div>
                 </div>
               );
@@ -954,12 +992,14 @@ function FlashTab({ cards, progress, playSound }) {
           </div>
           {totalPassed === quarters.length && (
             <div style={{textAlign:"center",padding:"20px 0"}}>
-              <p style={{color:"var(--text2)",fontSize:13,marginBottom:16}}>You've been through all quarters! You can revisit any quarter or do a full set test.</p>
+              <p style={{color:"var(--text2)",fontSize:13,marginBottom:16}}>
+                You've completed all quarters! Revisit any quarter or test all cards.
+              </p>
               <button className="btn btn-primary" onClick={() => {
                 setTestCards(shuffle([...cards]));
                 setTestIdx(0); setAnswer(""); setRevealed(false);
                 setAiResult(null); setTestResults([]); setTestDone(false);
-                setActiveQuarter(quarters.length - 1);
+                saveFlashState({ activeQuarter: quarters.length - 1 });
                 setMode("test"); playSound("nav");
               }}>Test All {cards.length} Cards →</button>
             </div>
@@ -974,18 +1014,22 @@ function FlashTab({ cards, progress, playSound }) {
 
   // ── Browse mode ───────────────────────────────────────────────────────────
   if (mode === "browse") {
-    const qCards = quarters[activeQuarter];
+    const qCards = quarters[activeQuarter] || [];
     const card   = qCards[browseIdx];
+    if (!card) return <Empty />;
     const pct    = Math.round(((browseIdx + 1) / qCards.length) * 100);
     const isLast = browseIdx === qCards.length - 1;
 
     const go = (d) => {
+      const next = Math.max(0, Math.min(qCards.length - 1, browseIdx + d));
       playSound("nav"); setFlipped(false);
-      setTimeout(() => setBrowseIdx(i => Math.max(0, Math.min(qCards.length - 1, i + d))), flipped ? 120 : 0);
+      setTimeout(() => {
+        setBrowseIdx(next);
+        saveFlashState({ browseIdx: next, activeQuarter });
+      }, flipped ? 120 : 0);
     };
 
     const startTest = () => {
-      // Cumulative: test all cards up to and including this quarter
       const cumulativeCards = quarters.slice(0, activeQuarter + 1).flat();
       setTestCards(shuffle([...cumulativeCards]));
       setTestIdx(0); setAnswer(""); setRevealed(false);
@@ -1001,7 +1045,7 @@ function FlashTab({ cards, progress, playSound }) {
           <span className="flash-phase-chip browse">Browse</span>
         </div>
 
-        {progress[card?.id]?.mastered && <div className="mastered-pill">✦ Mastered</div>}
+        {progress[card.id]?.mastered && <div className="mastered-pill">✦ Mastered</div>}
         <div className="prog-wrap">
           <div className="prog-header">
             <span className="prog-label">Card {browseIdx + 1} of {qCards.length}</span>
@@ -1015,14 +1059,14 @@ function FlashTab({ cards, progress, playSound }) {
 
         <div className="card-area fade-up">
           <div className={`card-wrap${flipped?" flipped":""}`} onClick={() => { playSound("flip"); setFlipped(f=>!f); }}>
-            <div className="card-face"><div className="card-chip">Term</div><div className="card-term">{card?.term}</div><div className="card-hint">click to flip</div></div>
-            <div className="card-face card-back"><div className="card-chip">Definition</div><div className="card-def">{card?.def}</div></div>
+            <div className="card-face"><div className="card-chip">Term</div><div className="card-term">{card.term}</div><div className="card-hint">click to flip</div></div>
+            <div className="card-face card-back"><div className="card-chip">Definition</div><div className="card-def">{card.def}</div></div>
           </div>
         </div>
 
         <div className="card-nav">
           <button className="btn btn-ghost" onClick={() => go(-1)} disabled={browseIdx === 0}>← Prev</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => { playSound("flip"); setFlipped(f=>!f); }}>{flipped?"Show Term":"Show Answer"}</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { playSound("flip"); setFlipped(f=>!f); }}>{flipped ? "Show Term" : "Show Answer"}</button>
           <button className="btn btn-ghost" onClick={() => go(1)} disabled={isLast}>Next →</button>
         </div>
 
@@ -1031,13 +1075,18 @@ function FlashTab({ cards, progress, playSound }) {
             <div style={{fontSize:20,marginBottom:8}}>✅ Quarter {activeQuarter + 1} browsed!</div>
             <p style={{color:"var(--text2)",fontSize:13,marginBottom:16,lineHeight:1.7}}>
               You've seen all {qCards.length} cards in this quarter.<br/>
-              Time to test yourself — you'll be tested on{" "}
+              Test yourself on{" "}
               <strong style={{color:"#fff"}}>
                 {quarters.slice(0, activeQuarter + 1).flat().length} cards
-              </strong>{activeQuarter > 0 ? " (cumulative)" : ""}.
+              </strong>
+              {activeQuarter > 0 ? " (includes all previous quarters)" : ""}.
             </p>
             <button className="btn btn-primary" onClick={startTest}>Test Myself Now →</button>
-            <button className="btn btn-ghost" style={{marginLeft:8}} onClick={() => { setBrowseIdx(0); setFlipped(false); }}>Review Again</button>
+            <button className="btn btn-ghost" style={{marginLeft:8}} onClick={() => {
+              setBrowseIdx(0);
+              saveFlashState({ browseIdx: 0, activeQuarter });
+              setFlipped(false);
+            }}>Review Again</button>
           </div>
         )}
       </div>
@@ -1058,32 +1107,30 @@ function FlashTab({ cards, progress, playSound }) {
         <div className="quarter-test-wrap fade-up">
           <div className="flash-mode-bar">
             <button className="btn btn-ghost btn-sm" onClick={() => setMode("overview")}>← Overview</button>
-            <span className="flash-mode-label">Quarter {activeQuarter + 1} Test — Results</span>
+            <span className="flash-mode-label">Q{activeQuarter + 1} Test — Results</span>
           </div>
           <div className="qt-summary">
             <div className="qt-summary-score" style={{color:passed?"var(--teal)":pct>=50?"var(--yellow)":"var(--red)"}}>{pct}%</div>
             <div className="qt-summary-label">Quarter {activeQuarter + 1} Test Complete</div>
             <div className="qt-summary-breakdown">
               <div><div style={{fontSize:28,fontWeight:800,color:"var(--teal)"}}>{correct}</div><div style={{fontSize:10,color:"var(--text2)",letterSpacing:1,textTransform:"uppercase"}}>Correct</div></div>
-              <div><div style={{fontSize:28,fontWeight:800,color:"var(--red)"}}>{total - correct}</div><div style={{fontSize:10,color:"var(--text2)",letterSpacing:1,textTransform:"uppercase"}}>Wrong</div></div>
+              <div><div style={{fontSize:28,fontWeight:800,color:"var(--red)"}}>{total-correct}</div><div style={{fontSize:10,color:"var(--text2)",letterSpacing:1,textTransform:"uppercase"}}>Wrong</div></div>
               <div><div style={{fontSize:28,fontWeight:800,color:"var(--violet)"}}>{total}</div><div style={{fontSize:10,color:"var(--text2)",letterSpacing:1,textTransform:"uppercase"}}>Total</div></div>
             </div>
             {passed ? (
               <>
-                <div style={{color:"var(--teal)",fontWeight:700,fontSize:15,marginBottom:12}}>✓ Passed! Quarter {activeQuarter + 1} complete.</div>
+                <div style={{color:"var(--teal)",fontWeight:700,fontSize:15,marginBottom:12}}>✓ Quarter {activeQuarter + 1} passed!</div>
                 {activeQuarter < quarters.length - 1 ? (
                   <button className="btn btn-primary" onClick={() => {
-                    setQuartersPassed(p => ({...p, [activeQuarter]: true}));
-                    setActiveQuarter(activeQuarter + 1);
-                    setBrowseIdx(0); setFlipped(false);
-                    setMode("browse"); playSound("mastered");
-                    spawnConfetti(20);
+                    passQuarter(activeQuarter);
+                    goToQuarter(activeQuarter + 1);
+                    playSound("mastered"); spawnConfetti(22);
                   }}>Continue to Quarter {activeQuarter + 2} →</button>
                 ) : (
                   <button className="btn btn-primary" onClick={() => {
-                    setQuartersPassed(p => ({...p, [activeQuarter]: true}));
-                    setMode("overview"); playSound("mastered"); spawnConfetti(28);
-                  }}>🎉 Complete! Back to Overview</button>
+                    passQuarter(activeQuarter);
+                    setMode("overview"); playSound("mastered"); spawnConfetti(30);
+                  }}>🎉 All done! Back to Overview</button>
                 )}
                 <button className="btn btn-ghost" style={{marginLeft:8}} onClick={() => {
                   setTestCards(shuffle([...cumulativeCards]));
@@ -1093,20 +1140,25 @@ function FlashTab({ cards, progress, playSound }) {
               </>
             ) : (
               <>
-                <div style={{color:"var(--yellow)",fontWeight:600,fontSize:13,marginBottom:16}}>Need {Math.ceil(PASS_THRESHOLD*100)}% to pass. Review and try again!</div>
+                <div style={{color:"var(--yellow)",fontWeight:600,fontSize:13,marginBottom:16}}>
+                  Need {Math.ceil(PASS_THRESHOLD * 100)}% to pass. Review and try again!
+                </div>
                 <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
                   <button className="btn btn-primary" onClick={() => {
                     setTestCards(shuffle([...cumulativeCards]));
                     setTestIdx(0); setAnswer(""); setRevealed(false);
                     setAiResult(null); setTestResults([]); setTestDone(false);
                   }}>Retry Test</button>
-                  <button className="btn btn-ghost" onClick={() => { setBrowseIdx(0); setFlipped(false); setMode("browse"); }}>Review Cards First</button>
+                  <button className="btn btn-ghost" onClick={() => {
+                    setBrowseIdx(0);
+                    saveFlashState({ browseIdx: 0, activeQuarter });
+                    setFlipped(false); setMode("browse");
+                  }}>Review Cards First</button>
                 </div>
               </>
             )}
           </div>
 
-          {/* Missed cards review */}
           {testResults.filter(r => !r.correct).length > 0 && (
             <div style={{marginTop:20}}>
               <div className="weak-review-title" style={{marginBottom:10}}>✗ Cards to review</div>
@@ -1123,7 +1175,9 @@ function FlashTab({ cards, progress, playSound }) {
       );
     }
 
+    // ── Active test question ────────────────────────────────────────────────
     const card = testCards[testIdx];
+    if (!card) return null;
     const tpct = Math.round((testIdx / testCards.length) * 100);
 
     const submit = async () => {
@@ -1135,7 +1189,6 @@ function FlashTab({ cards, progress, playSound }) {
         setAiResult({ verdict:"correct", reason:"Exact match!" });
         playSound("correct");
       } else {
-        // AI check
         setAiChecking(true);
         const result = await checkWithAI(card.term, card.def, answer);
         setAiResult(result);
@@ -1148,8 +1201,7 @@ function FlashTab({ cards, progress, playSound }) {
     const commitResult = (correct) => {
       setTestResults(r => [...r, { card, correct, yourAnswer: correct ? null : answer }]);
       if (testIdx + 1 >= testCards.length) {
-        setTestDone(true);
-        playSound("sectionEnd");
+        setTestDone(true); playSound("sectionEnd");
       } else {
         setTestIdx(i => i + 1);
         setAnswer(""); setRevealed(false); setAiResult(null);
@@ -1161,7 +1213,10 @@ function FlashTab({ cards, progress, playSound }) {
       <div className="quarter-test-wrap">
         <div className="flash-mode-bar">
           <button className="btn btn-ghost btn-sm" onClick={() => setMode("browse")}>← Back to Browse</button>
-          <span className="flash-mode-label">Q{activeQuarter + 1} Test — {cumulativeCards.length} cards{activeQuarter > 0 ? " (cumulative)" : ""}</span>
+          <span className="flash-mode-label">
+            Q{activeQuarter + 1} Test — {cumulativeCards.length} cards
+            {activeQuarter > 0 ? " (cumulative)" : ""}
+          </span>
           <span className="flash-phase-chip test">Test</span>
         </div>
 
@@ -1174,7 +1229,7 @@ function FlashTab({ cards, progress, playSound }) {
         </div>
 
         <div className="qt-card pop-in">
-          <div className="qt-term">{card?.term}</div>
+          <div className="qt-term">{card.term}</div>
           <div className="qt-instruction">Write the full definition from memory</div>
           <textarea
             ref={taRef}
@@ -1195,28 +1250,26 @@ function FlashTab({ cards, progress, playSound }) {
           )}
 
           {aiChecking && (
-            <div className="ai-checking"><div className="spinner"/>Checking with AI…</div>
+            <div className="ai-checking"><div className="spinner"/>AI is checking your answer…</div>
           )}
 
-          {revealed && aiResult && (
+          {revealed && aiResult && !aiChecking && (
             <>
               <div className={`qt-result-bar ${aiResult.verdict==="correct"?"correct":aiResult.verdict==="similar"?"similar":"wrong"}`}>
                 <span>{aiResult.verdict==="correct"?"✓":aiResult.verdict==="similar"?"≈":"✗"}</span>
                 <span>{aiResult.reason}</span>
               </div>
-
               <div className="qt-model">
                 <div className="qt-model-lbl">Model Answer</div>
-                <div className="qt-model-text">{card?.def}</div>
+                <div className="qt-model-text">{card.def}</div>
               </div>
-
               <div className="qt-actions">
                 {aiResult.verdict === "correct" && (
                   <button className="btn btn-teal" onClick={() => { spawnConfetti(8); commitResult(true); }}>✓ Got it right →</button>
                 )}
                 {aiResult.verdict === "similar" && (
                   <>
-                    <button className="btn btn-ghost" onClick={() => { playSound("wrong"); commitResult(false); }}>✗ Mark Wrong</button>
+                    <button className="btn btn-danger" onClick={() => { playSound("wrong"); commitResult(false); }}>✗ Mark Wrong</button>
                     <button className="btn btn-teal" onClick={() => { playSound("correct"); spawnConfetti(6); commitResult(true); }}>✓ Close Enough</button>
                   </>
                 )}
