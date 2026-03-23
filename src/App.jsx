@@ -304,10 +304,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .tf-opt.wrg{border-color:var(--red)!important;background:var(--red-glow)!important;color:var(--red)!important;}
 .tf-opt:disabled{cursor:default;}
 .written-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
-.written-input{width:100%;max-width:500px;padding:14px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;transition:border-color .15s;text-align:center;}
+.written-input{width:100%;max-width:560px;padding:14px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;transition:border-color .15s;text-align:left;resize:none;overflow:hidden;line-height:1.7;min-height:56px;display:block;}
 .written-input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px var(--accent-glow);}
 .written-input.cor{border-color:var(--teal);color:var(--teal);}
 .written-input.wrg{border-color:var(--red);color:var(--red);}
+.ai-verdict-bar{display:flex;align-items:flex-start;gap:10px;padding:13px 16px;border-radius:11px;border:1.5px solid;font-size:13px;font-weight:500;margin-top:4px;max-width:560px;width:100%;line-height:1.6;}
+.ai-verdict-bar.correct{background:rgba(52,211,153,.07);border-color:var(--teal);color:var(--teal);}
+.ai-verdict-bar.similar{background:rgba(251,191,36,.08);border-color:var(--yellow);color:var(--yellow);}
+.ai-verdict-bar.wrong{background:var(--red-glow);border-color:var(--red);color:var(--red);}
+.ai-verdict-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.ai-verdict-body{flex:1;}
+.ai-verdict-reason{font-size:12px;opacity:.85;margin-top:2px;}
+.ai-keyword-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.ai-kw{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid;letter-spacing:.5px;}
+.ai-kw.found{color:var(--teal);border-color:var(--teal);background:var(--teal-glow);}
+.ai-kw.missing{color:var(--red);border-color:var(--red);background:var(--red-glow);}
+.ai-mark-row{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;}
 .feedback-bar{display:flex;align-items:flex-start;gap:10px;padding:14px 18px;border-radius:11px;border:1px solid;font-size:13px;font-weight:500;max-width:540px;width:100%;line-height:1.6;}
 .feedback-bar.cor{background:rgba(52,211,153,.07);border-color:var(--teal);color:var(--teal);}
 .feedback-bar.wrg{background:var(--red-glow);border-color:var(--red);color:var(--red);}
@@ -603,7 +615,13 @@ export default function App() {
     setStreak(sd?.value || 0);
     // Load flash quarter progress
     const { data: fp } = await supabase.from("flash_progress").select("*").eq("set_id", setId).eq("user_id", session.user.id).maybeSingle();
-    setFlashState(fp ? { quartersPassed: fp.quarters_passed || {}, activeQuarter: fp.active_quarter || 0, browseIdx: fp.browse_idx || 0 } : { quartersPassed: {}, activeQuarter: 0, browseIdx: 0 });
+    setFlashState(fp ? {
+      quartersPassed: fp.quarters_passed || {},
+      activeQuarter:  fp.active_quarter  || 0,
+      browseIdx:      fp.browse_idx      || 0,
+      lastTab:        fp.last_tab        || "Learn",
+      learnSection:   fp.learn_section   || 0,
+    } : { quartersPassed: {}, activeQuarter: 0, browseIdx: 0, lastTab: "Learn", learnSection: 0 });
   };
 
   // ── Save progress (upsert per card) ───────────────────────────────────────
@@ -639,6 +657,8 @@ export default function App() {
         quarters_passed: next.quartersPassed,
         active_quarter: next.activeQuarter,
         browse_idx: next.browseIdx,
+        last_tab: next.lastTab || "Learn",
+        learn_section: next.learnSection || 0,
       }, { onConflict: "user_id,set_id" });
       setSyncStatus("ok");
     } catch { setSyncStatus("err"); }
@@ -848,10 +868,21 @@ function SetModal({ title, initial, onSave, onClose }) {
 // ─── Study View ───────────────────────────────────────────────────────────────
 const STUDY_TABS = ["Flashcards","Learn","Anki","Exam","Test","Manage"];
 function StudyView({ set, cards, progress, streak, playSound, mastered, weak, saveProgress, onUpdateRaw, onResetProgress, onRenameSet, session, flashState, saveFlashState }) {
-  const [tab, setTab] = useState("Learn");
+  const [tab, setTab] = useState(flashState.lastTab || "Learn");
+
+  // When flashState loads (after page refresh), restore the last tab
+  useEffect(() => {
+    if (flashState.lastTab) setTab(flashState.lastTab);
+  }, [flashState.lastTab]);
+
+  const changeTab = (t) => {
+    setTab(t); playSound("nav");
+    saveFlashState({ lastTab: t });
+  };
+
   return (
     <>
-      <div className="tabs">{STUDY_TABS.map(t=><button key={t} className={`tab${tab===t?" active":""}`} onClick={()=>{setTab(t);playSound("nav");}}>{t}</button>)}</div>
+      <div className="tabs">{STUDY_TABS.map(t=><button key={t} className={`tab${tab===t?" active":""}`} onClick={()=>changeTab(t)}>{t}</button>)}</div>
       <div className="main">
         <div className="stats">
           <div className="stat-card"><div className="stat-val" style={{color:"#fff"}}>{cards.length}</div><div className="stat-lbl">Total</div></div>
@@ -860,7 +891,7 @@ function StudyView({ set, cards, progress, streak, playSound, mastered, weak, sa
           <div className="stat-card"><div className="stat-val" style={{color:"var(--yellow)"}}>{streak}</div><div className="stat-lbl">Streak</div></div>
         </div>
         {tab==="Flashcards" && <FlashTab cards={cards} progress={progress} playSound={playSound} flashState={flashState} saveFlashState={saveFlashState} />}
-        {tab==="Learn"      && <LearnTab cards={cards} progress={progress} saveProgress={saveProgress} streak={streak} playSound={playSound} />}
+        {tab==="Learn"      && <LearnTab cards={cards} progress={progress} saveProgress={saveProgress} streak={streak} playSound={playSound} flashState={flashState} saveFlashState={saveFlashState} />}
         {tab==="Anki"       && <AnkiTab  cards={cards} userId={session?.user?.id} setId={set?.id} playSound={playSound} />}
         {tab==="Exam"       && <ExamTab  cards={cards} progress={progress} saveProgress={saveProgress} streak={streak} playSound={playSound} />}
         {tab==="Test"       && <TestTab  cards={cards} playSound={playSound} />}
@@ -1290,106 +1321,412 @@ function FlashTab({ cards, progress, playSound, flashState, saveFlashState }) {
   return null;
 }
 
-// ─── Learn ────────────────────────────────────────────────────────────────────
-function LearnTab({ cards, progress, saveProgress, streak, playSound }) {
-  const [phase,setPhase]=useState("intro");
-  const [sectionIdx,setSectionIdx]=useState(0);
-  const [sections,setSections]=useState([]);
-  const [queue,setQueue]=useState([]);
-  const [qIdx,setQIdx]=useState(0);
-  const [qData,setQData]=useState(null);
-  const [answered,setAnswered]=useState(false);
-  const [result,setResult]=useState(null);
-  const [chosen,setChosen]=useState(null);
-  const [written,setWritten]=useState("");
-  const [sectionStats,setSectionStats]=useState({correct:0,wrong:0,wrongCards:[]});
-  const inputRef=useRef(null);
-  const buildSections=useCallback(()=>{
-    if(!cards.length) return [];
-    const active=cards.filter(c=>!progress[c.id]?.mastered);
-    const sorted=[...active].sort((a,b)=>srPriority(progress[a.id])-srPriority(progress[b.id]));
-    const all=sorted.length?sorted:[...cards];
-    const rounds=[];
-    for(let i=0;i<all.length;i+=ROUND_SIZE) rounds.push(all.slice(i,i+ROUND_SIZE));
+// ─── Learn Tab ────────────────────────────────────────────────────────────────
+// AI answer checking: extracts key terms from model answer, checks overlap,
+// shows keyword badges (found ✓ / missing ✗) and lets student self-adjudicate if "similar"
+
+async function checkLearnAnswer(term, modelAnswer, studentAnswer) {
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 200,
+        system: `You are a strict revision assistant checking a student's written answer.
+Extract 3-6 key concepts/terms from the model answer.
+Then check which ones appear (even paraphrased) in the student's answer.
+Reply ONLY with valid JSON, no markdown:
+{"verdict":"correct"|"similar"|"wrong","reason":"one sentence","keywords":[{"word":"concept","found":true|false}]}
+"correct" = captures all key ideas. "similar" = captures main idea but missing ≥1 key concept. "wrong" = missing most key ideas or factually incorrect.`,
+        messages: [{ role: "user", content: `Term: ${term}\nModel answer: ${modelAnswer}\nStudent answer: ${studentAnswer}` }],
+      }),
+    });
+    const data = await res.json();
+    const text = (data.content || []).map(b => b.text || "").join("");
+    return JSON.parse(text.replace(/```json|```/g, "").trim());
+  } catch {
+    return { verdict: "similar", reason: "Could not auto-check — you decide.", keywords: [] };
+  }
+}
+
+// Auto-resize textarea helper
+function autoResize(el) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
+
+function LearnTab({ cards, progress, saveProgress, streak, playSound, flashState, saveFlashState }) {
+  const [phase,        setPhase]        = useState("intro");
+  const [sectionIdx,   setSectionIdx]   = useState(flashState.learnSection || 0);
+  const [sections,     setSections]     = useState([]);
+  const [queue,        setQueue]        = useState([]);
+  const [qIdx,         setQIdx]         = useState(0);
+  const [qData,        setQData]        = useState(null);
+  const [answered,     setAnswered]     = useState(false);
+  const [result,       setResult]       = useState(null);
+  const [chosen,       setChosen]       = useState(null);
+  const [written,      setWritten]      = useState("");
+  const [sectionStats, setSectionStats] = useState({correct:0,wrong:0,wrongCards:[]});
+  // AI checking state
+  const [aiChecking,   setAiChecking]   = useState(false);
+  const [aiResult,     setAiResult]     = useState(null); // {verdict, reason, keywords}
+  const [pendingAI,    setPendingAI]    = useState(false); // waiting for student to accept/reject
+  const inputRef = useRef(null);
+
+  const buildSections = useCallback(() => {
+    if (!cards.length) return [];
+    const active = cards.filter(c => !progress[c.id]?.mastered);
+    const sorted = [...active].sort((a,b) => srPriority(progress[a.id]) - srPriority(progress[b.id]));
+    const all = sorted.length ? sorted : [...cards];
+    const rounds = [];
+    for (let i = 0; i < all.length; i += ROUND_SIZE) rounds.push(all.slice(i, i + ROUND_SIZE));
     return rounds;
-  },[cards,progress]);
-  const startSection=(secs,si,prog)=>{
-    const q=buildSRQueue(secs[si]||[],prog,(secs[si]||[]).length);
-    setQueue([...q]);setQIdx(0);setSectionStats({correct:0,wrong:0,wrongCards:[]});
+  }, [cards, progress]);
+
+  const startSection = (secs, si, prog) => {
+    const q = buildSRQueue(secs[si] || [], prog, (secs[si] || []).length);
+    setQueue([...q]); setQIdx(0); setSectionStats({correct:0,wrong:0,wrongCards:[]});
+    setAnswered(false); setResult(null); setAiResult(null); setPendingAI(false);
   };
-  const startSession=()=>{const secs=buildSections();setSections(secs);setSectionIdx(0);startSection(secs,0,progress);setPhase("question");};
-  useEffect(()=>{
-    const current=queue[qIdx];
-    if(!current||phase!=="question") return;
-    const r=Math.random();
-    let qtype=r<0.55?"mc":r<0.80?"tf":"written";
-    if(cards.length<4) qtype="written";
-    const dir=(qtype==="mc"&&Math.random()<0.4)?"defToTerm":"termToDef";
+
+  const startSession = () => {
+    const secs = buildSections();
+    setSections(secs); setSectionIdx(0);
+    startSection(secs, 0, progress);
+    setPhase("question");
+    saveFlashState({ learnSection: 0 });
+  };
+
+  // Build question when card changes
+  useEffect(() => {
+    const current = queue[qIdx];
+    if (!current || phase !== "question") return;
+    const r = Math.random();
+    let qtype = r < 0.55 ? "mc" : r < 0.80 ? "tf" : "written";
+    if (cards.length < 4) qtype = "written";
+    const dir = (qtype === "mc" && Math.random() < 0.4) ? "defToTerm" : "termToDef";
     let built;
-    if(qtype==="mc") built={qtype,dir,...buildMCQ(current,cards,dir)};
-    else if(qtype==="tf") built={qtype,dir:"mixed",...buildTF(current,cards)};
-    else built={qtype:"written",dir:"termToDef",questionText:current.term,questionLabel:"Type the definition",correctAnswer:current.def,isReverse:false};
-    setQData(built);setAnswered(false);setResult(null);setChosen(null);setWritten("");
-    setTimeout(()=>inputRef.current?.focus(),80);
-  },[qIdx,queue,phase]);
-  const current=queue[qIdx];
-  const commit=(correct)=>{
-    if(answered||!current) return;
-    setAnswered(true);setResult(correct?"correct":"wrong");
-    const np={...progress};
-    const p={...(np[current.id]||{correctStreak:0,totalIncorrect:0,totalCorrect:0,mastered:false})};
-    if(correct){p.correctStreak=(p.correctStreak||0)+1;p.totalCorrect=(p.totalCorrect||0)+1;if(p.correctStreak>=MASTERY_THRESHOLD){p.mastered=true;playSound("mastered");spawnConfetti(18);}else playSound("correct");}
-    else{p.totalIncorrect=(p.totalIncorrect||0)+1;p.correctStreak=0;playSound("wrong");}
-    p.lastSeen=Date.now();np[current.id]=p;
-    saveProgress(np, correct ? streak + 1 : 0);
-    setSectionStats(s=>({correct:s.correct+(correct?1:0),wrong:s.wrong+(correct?0:1),wrongCards:correct?s.wrongCards:[...s.wrongCards,current]}));
+    if (qtype === "mc") built = { qtype, dir, ...buildMCQ(current, cards, dir) };
+    else if (qtype === "tf") built = { qtype, dir: "mixed", ...buildTF(current, cards) };
+    else built = { qtype: "written", dir: "termToDef", questionText: current.term, questionLabel: "Type the definition", correctAnswer: current.def, isReverse: false };
+    setQData(built); setAnswered(false); setResult(null);
+    setChosen(null); setWritten(""); setAiResult(null); setPendingAI(false);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      if (inputRef.current) autoResize(inputRef.current);
+    }, 80);
+  }, [qIdx, queue, phase]);
+
+  const current = queue[qIdx];
+
+  // Commit a result (correct or wrong) and update progress
+  const commit = (correct) => {
+    if (answered || !current) return;
+    setAnswered(true); setResult(correct ? "correct" : "wrong");
+    setPendingAI(false);
+    const np = { ...progress };
+    const p = { ...(np[current.id] || { correctStreak:0, totalIncorrect:0, totalCorrect:0, mastered:false }) };
+    if (correct) {
+      p.correctStreak = (p.correctStreak || 0) + 1;
+      p.totalCorrect  = (p.totalCorrect  || 0) + 1;
+      if (p.correctStreak >= MASTERY_THRESHOLD) { p.mastered = true; playSound("mastered"); spawnConfetti(18); }
+      else playSound("correct");
+    } else {
+      p.totalIncorrect = (p.totalIncorrect || 0) + 1;
+      p.correctStreak  = 0;
+      playSound("wrong");
+    }
+    p.lastSeen = Date.now(); np[current.id] = p;
+    // Streak: increment on correct, keep on wrong (don't penalise mid-question wrong answers)
+    saveProgress(np, correct ? streak + 1 : Math.max(0, streak - 0));
+    setSectionStats(s => ({
+      correct: s.correct + (correct ? 1 : 0),
+      wrong:   s.wrong   + (correct ? 0 : 1),
+      wrongCards: correct ? s.wrongCards : [...s.wrongCards, current],
+    }));
   };
-  const next=()=>{
-    if(result==="wrong"){const nq=[...queue];nq.splice(Math.min(qIdx+2+~~(Math.random()*3),nq.length),0,current);setQueue(nq);}
-    const ni=qIdx+1;
-    if(ni>=queue.length){playSound("sectionEnd");setPhase("sectionEnd");}else setQIdx(ni);
+
+  // Handle written answer submission — exact check first, then AI
+  const submitWritten = async () => {
+    if (answered || aiChecking || !written.trim()) return;
+    const norm = s => s.toLowerCase().replace(/[^\w\s]/g, "").trim();
+    const exact = norm(written) === norm(qData.correctAnswer);
+    if (exact) {
+      commit(true);
+      return;
+    }
+    // AI check
+    setAiChecking(true);
+    const res = await checkLearnAnswer(qData.questionText, qData.correctAnswer, written);
+    setAiChecking(false);
+    setAiResult(res);
+    if (res.verdict === "correct") {
+      commit(true);
+    } else if (res.verdict === "wrong") {
+      commit(false);
+    } else {
+      // "similar" — show keyword breakdown and let student decide
+      setPendingAI(true);
+    }
   };
-  const goNextSection=()=>{const ni=sectionIdx+1;if(ni>=sections.length){setPhase("allDone");}else{setSectionIdx(ni);startSection(sections,ni,progress);setPhase("question");}};
-  if(!cards.length) return <Empty msg="Add cards in the Manage tab to start learning." />;
-  if(phase==="intro"){
-    const active=cards.filter(c=>!progress[c.id]?.mastered).length;
-    const newC=cards.filter(c=>!progress[c.id]).length;
-    const rev=cards.filter(c=>progress[c.id]&&!progress[c.id].mastered&&(progress[c.id].totalIncorrect||0)>0).length;
-    const str=cards.filter(c=>(progress[c.id]?.totalIncorrect||0)>2).length;
-    const tot=Math.ceil(active/ROUND_SIZE)||1;
-    return(<div className="learn-wrap fade-up"><div className="round-end" style={{padding:"36px 28px"}}><div style={{fontSize:40,marginBottom:12}}>🧠</div><h2 style={{fontSize:22,fontWeight:800,color:"#fff",marginBottom:6}}>Ready to study?</h2><p style={{color:"var(--text2)",fontSize:13,marginBottom:20,lineHeight:1.7}}>{active} cards need work · <strong style={{color:"var(--violet)"}}>{tot} section{tot!==1?"s":""}</strong> of ~{ROUND_SIZE} questions each</p><div className="sr-insight">{newC>0&&<div className="sr-chip new">✦ {newC} new</div>}{rev>0&&<div className="sr-chip review">↺ {rev} review</div>}{str>0&&<div className="sr-chip struggling">⚠ {str} struggling</div>}{(cards.length-active)>0&&<div className="sr-chip mastered">✓ {cards.length-active} mastered</div>}</div><button className="btn btn-primary" style={{marginTop:8}} onClick={startSession}>Start Session →</button></div></div>);
+
+  const next = () => {
+    if (result === "wrong") {
+      const nq = [...queue];
+      nq.splice(Math.min(qIdx + 2 + ~~(Math.random() * 3), nq.length), 0, current);
+      setQueue(nq);
+    }
+    const ni = qIdx + 1;
+    if (ni >= queue.length) { playSound("sectionEnd"); setPhase("sectionEnd"); }
+    else setQIdx(ni);
+  };
+
+  const goNextSection = () => {
+    const ni = sectionIdx + 1;
+    if (ni >= sections.length) { setPhase("allDone"); }
+    else {
+      setSectionIdx(ni);
+      startSection(sections, ni, progress);
+      setPhase("question");
+      saveFlashState({ learnSection: ni });
+    }
+  };
+
+  if (!cards.length) return <Empty msg="Add cards in the Manage tab to start learning." />;
+
+  // ── Intro screen ────────────────────────────────────────────────────────
+  if (phase === "intro") {
+    const active = cards.filter(c => !progress[c.id]?.mastered).length;
+    const newC   = cards.filter(c => !progress[c.id]).length;
+    const rev    = cards.filter(c => progress[c.id] && !progress[c.id].mastered && (progress[c.id].totalIncorrect || 0) > 0).length;
+    const str    = cards.filter(c => (progress[c.id]?.totalIncorrect || 0) > 2).length;
+    const tot    = Math.ceil(active / ROUND_SIZE) || 1;
+    return (
+      <div className="learn-wrap fade-up">
+        <div className="round-end" style={{padding:"36px 28px"}}>
+          <div style={{fontSize:40,marginBottom:12}}>🧠</div>
+          <h2 style={{fontSize:22,fontWeight:800,color:"#fff",marginBottom:6}}>Ready to study?</h2>
+          <p style={{color:"var(--text2)",fontSize:13,marginBottom:20,lineHeight:1.7}}>
+            {active} cards need work · <strong style={{color:"var(--violet)"}}>{tot} section{tot!==1?"s":""}</strong> of ~{ROUND_SIZE} questions each
+          </p>
+          <div className="sr-insight">
+            {newC > 0  && <div className="sr-chip new">✦ {newC} new</div>}
+            {rev > 0   && <div className="sr-chip review">↺ {rev} review</div>}
+            {str > 0   && <div className="sr-chip struggling">⚠ {str} struggling</div>}
+            {(cards.length - active) > 0 && <div className="sr-chip mastered">✓ {cards.length - active} mastered</div>}
+          </div>
+          {flashState.learnSection > 0 && (
+            <div style={{fontSize:12,color:"var(--text2)",marginTop:8,marginBottom:4}}>
+              Last time you were on section {(flashState.learnSection || 0) + 1}
+            </div>
+          )}
+          <button className="btn btn-primary" style={{marginTop:8}} onClick={startSession}>Start Session →</button>
+        </div>
+      </div>
+    );
   }
-  if(phase==="sectionEnd"){
-    const tot=sectionStats.correct+sectionStats.wrong;
-    const pct=tot?Math.round((sectionStats.correct/tot)*100):0;
-    const isLast=sectionIdx>=sections.length-1;
-    return(<div className="learn-wrap slide-in"><div className="section-end"><div className="section-end-score" style={{color:pct>=80?"var(--teal)":pct>=50?"var(--yellow)":"var(--red)"}}>{pct}%</div><div className="section-end-label">Section {sectionIdx+1} complete</div><div className="section-end-breakdown"><div><div className="seb-val" style={{color:"var(--teal)"}}>{sectionStats.correct}</div><div className="seb-lbl">Correct</div></div><div><div className="seb-val" style={{color:"var(--red)"}}>{sectionStats.wrong}</div><div className="seb-lbl">Wrong</div></div><div><div className="seb-val" style={{color:"var(--violet)"}}>{sections.length-sectionIdx-1}</div><div className="seb-lbl">Remaining</div></div></div>{sectionStats.wrongCards.length>0&&(<div className="weak-review"><div className="weak-review-title">⚠ Review these before continuing</div>{sectionStats.wrongCards.map((c,i)=><div key={i} className="weak-row"><div className="weak-row-term">{c.term}</div><div className="weak-row-def">{c.def}</div></div>)}</div>)}<div style={{display:"flex",gap:8,justifyContent:"center",marginTop:24,flexWrap:"wrap"}}>{isLast?<button className="btn btn-primary" onClick={()=>setPhase("allDone")}>Finish Session ✓</button>:<button className="btn btn-primary" onClick={goNextSection}>Next Section →</button>}<button className="btn btn-ghost" onClick={()=>setPhase("intro")}>Back to Overview</button></div></div><div className="section-dots" style={{marginTop:20}}>{sections.map((_,i)=><div key={i} className={`sdot${i<=sectionIdx?" done":""}`}/>)}</div></div>);
+
+  // ── Section end ──────────────────────────────────────────────────────────
+  if (phase === "sectionEnd") {
+    const tot = sectionStats.correct + sectionStats.wrong;
+    const pct = tot ? Math.round((sectionStats.correct / tot) * 100) : 0;
+    const isLast = sectionIdx >= sections.length - 1;
+    return (
+      <div className="learn-wrap slide-in">
+        <div className="section-end">
+          <div className="section-end-score" style={{color:pct>=80?"var(--teal)":pct>=50?"var(--yellow)":"var(--red)"}}>{pct}%</div>
+          <div className="section-end-label">Section {sectionIdx + 1} complete</div>
+          <div className="section-end-breakdown">
+            <div><div className="seb-val" style={{color:"var(--teal)"}}>{sectionStats.correct}</div><div className="seb-lbl">Correct</div></div>
+            <div><div className="seb-val" style={{color:"var(--red)"}}>{sectionStats.wrong}</div><div className="seb-lbl">Wrong</div></div>
+            <div><div className="seb-val" style={{color:"var(--violet)"}}>{sections.length - sectionIdx - 1}</div><div className="seb-lbl">Remaining</div></div>
+          </div>
+          {sectionStats.wrongCards.length > 0 && (
+            <div className="weak-review">
+              <div className="weak-review-title">⚠ Review these before continuing</div>
+              {sectionStats.wrongCards.map((c, i) => (
+                <div key={i} className="weak-row"><div className="weak-row-term">{c.term}</div><div className="weak-row-def">{c.def}</div></div>
+              ))}
+            </div>
+          )}
+          <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:24,flexWrap:"wrap"}}>
+            {isLast
+              ? <button className="btn btn-primary" onClick={() => setPhase("allDone")}>Finish Session ✓</button>
+              : <button className="btn btn-primary" onClick={goNextSection}>Next Section →</button>}
+            <button className="btn btn-ghost" onClick={() => setPhase("intro")}>Back to Overview</button>
+          </div>
+        </div>
+        <div className="section-dots" style={{marginTop:20}}>
+          {sections.map((_, i) => <div key={i} className={`sdot${i <= sectionIdx ? " done" : ""}`}/>)}
+        </div>
+      </div>
+    );
   }
-  if(phase==="allDone"){
-    const mn=cards.filter(c=>progress[c.id]?.mastered).length;
-    return(<div className="learn-wrap fade-up"><div className="round-end"><div className="round-score">🎉</div><div className="round-label">Session Complete!</div><div className="round-breakdown"><div><div className="breakdown-val" style={{color:"var(--teal)"}}>{mn}</div><div className="breakdown-lbl">Mastered</div></div><div><div className="breakdown-val" style={{color:"var(--yellow)"}}>{streak}</div><div className="breakdown-lbl">Streak</div></div><div><div className="breakdown-val" style={{color:"var(--red)"}}>{cards.filter(c=>(progress[c.id]?.totalIncorrect||0)>0&&!progress[c.id]?.mastered).length}</div><div className="breakdown-lbl">Still Weak</div></div></div><button className="btn btn-primary" onClick={()=>setPhase("intro")}>Study Again →</button></div></div>);
+
+  // ── All done ─────────────────────────────────────────────────────────────
+  if (phase === "allDone") {
+    const mn = cards.filter(c => progress[c.id]?.mastered).length;
+    return (
+      <div className="learn-wrap fade-up">
+        <div className="round-end">
+          <div className="round-score">🎉</div>
+          <div className="round-label">Session Complete!</div>
+          <div className="round-breakdown">
+            <div><div className="breakdown-val" style={{color:"var(--teal)"}}>{mn}</div><div className="breakdown-lbl">Mastered</div></div>
+            <div><div className="breakdown-val" style={{color:"var(--yellow)"}}>{streak}</div><div className="breakdown-lbl">Streak</div></div>
+            <div><div className="breakdown-val" style={{color:"var(--red)"}}>{cards.filter(c => (progress[c.id]?.totalIncorrect||0) > 0 && !progress[c.id]?.mastered).length}</div><div className="breakdown-lbl">Still Weak</div></div>
+          </div>
+          <button className="btn btn-primary" onClick={() => setPhase("intro")}>Study Again →</button>
+        </div>
+      </div>
+    );
   }
-  if(!current||!qData) return null;
-  const pct=Math.round((qIdx/(queue.length||1))*100);
-  const cp=progress[current.id]||{};
-  const norm=s=>s.toLowerCase().replace(/[^\w\s]/g,"").trim();
-  const chipLabel=qData.qtype==="mc"?(qData.isReverse?"Definition → Term":"Term → Definition"):qData.qtype==="tf"?"True / False":"Written Answer";
-  const chipCls=qData.qtype==="tf"?" tf":qData.isReverse?" reverse":"";
-  const tfP=qData.qtype==="tf"&&(qData.mode==="defFirst"?<><div className="learn-q-def-text">"{qData.shownDef}"</div><div className="learn-q-subtext">Is <strong style={{color:"#fff"}}>{qData.shownTerm}</strong> the correct term?</div></>:<><div className="learn-q-text">{qData.shownTerm}</div><div className="learn-q-subtext">Is this the right definition? <em style={{color:"var(--text2)",fontStyle:"normal"}}>"{qData.shownDef.slice(0,80)}{qData.shownDef.length>80?"…":""}"</em></div></>);
-  return(
+
+  if (!current || !qData) return null;
+
+  const pct      = Math.round((qIdx / (queue.length || 1)) * 100);
+  const cp       = progress[current.id] || {};
+  const chipLabel = qData.qtype === "mc" ? (qData.isReverse ? "Definition → Term" : "Term → Definition") : qData.qtype === "tf" ? "True / False" : "Written Answer";
+  const chipCls   = qData.qtype === "tf" ? " tf" : qData.isReverse ? " reverse" : "";
+  const tfP = qData.qtype === "tf" && (
+    qData.mode === "defFirst"
+      ? <><div className="learn-q-def-text">"{qData.shownDef}"</div><div className="learn-q-subtext">Is <strong style={{color:"#fff"}}>{qData.shownTerm}</strong> the correct term?</div></>
+      : <><div className="learn-q-text">{qData.shownTerm}</div><div className="learn-q-subtext">Is this the right definition? <em style={{color:"var(--text2)",fontStyle:"normal"}}>"{qData.shownDef.slice(0,80)}{qData.shownDef.length>80?"…":""}"</em></div></>
+  );
+
+  // Keyword badge renderer
+  const KeywordBadges = ({ keywords }) => keywords?.length > 0 ? (
+    <div className="ai-keyword-list">
+      {keywords.map((kw, i) => (
+        <span key={i} className={`ai-kw ${kw.found ? "found" : "missing"}`}>
+          {kw.found ? "✓" : "✗"} {kw.word}
+        </span>
+      ))}
+    </div>
+  ) : null;
+
+  return (
     <div className="learn-wrap">
-      <div className="section-banner"><div className="section-banner-left"><h3>Section {sectionIdx+1} of {sections.length}</h3><p>{qIdx+1} of {queue.length} · streak {cp.correctStreak||0}/{MASTERY_THRESHOLD}</p></div><div className="section-tag">{(progress[current.id]?.totalIncorrect||0)>1?"Needs work":"Looking good"}</div></div>
-      <div className="section-dots">{sections.map((_,i)=><div key={i} className={`sdot${i<sectionIdx?" done":i===sectionIdx?" active":""}`}/>)}</div>
-      <div className="prog-wrap"><div className="prog-header"><span className="prog-label">Progress in section</span><span className="prog-count">{pct}%</span></div><div className="prog-track"><div className="prog-bar" style={{width:`${pct}%`}}/><div className="prog-thumb" style={{left:`${Math.max(Math.min(pct,96),2)}%`}}>{qIdx}</div></div></div>
-      <div className="learn-q-card pop-in"><div className="learn-q-label">{qData.questionLabel}</div><div className={`learn-q-type-chip${chipCls}`}>{chipLabel}</div>{qData.qtype==="tf"?tfP:qData.isReverse?<div className="learn-q-def-text">{qData.questionText}</div>:<div className="learn-q-text">{qData.questionText}</div>}</div>
-      {qData.qtype==="mc"&&<div className="mc-grid">{qData.options.map((opt,i)=>{const ic=opt===qData.correctAnswer;const cls=answered?(ic?" cor":chosen===opt?" wrg":""):"";return<button key={i} className={`mc-opt${cls}`} disabled={answered} onClick={()=>{setChosen(opt);commit(opt===qData.correctAnswer);}}><span className="opt-letter">{String.fromCharCode(65+i)}</span><span>{opt}</span></button>;})}</div>}
-      {qData.qtype==="tf"&&<div className="tf-grid">{["True","False"].map(lbl=>{const ut=lbl==="True";const cls=answered?((qData.isTrue===ut)?" cor":" wrg"):"";return<button key={lbl} className={`tf-opt${cls}`} disabled={answered} onClick={()=>commit(qData.isTrue===ut)}>{lbl==="True"?"✓ True":"✗ False"}</button>;})}</div>}
-      {qData.qtype==="written"&&<div className="written-wrap"><input ref={inputRef} className={`written-input${answered?` ${result==="correct"?"cor":"wrg"}`:""}`} value={written} onChange={e=>setWritten(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!answered&&commit(norm(written)===norm(qData.correctAnswer))} disabled={answered} placeholder={qData.isReverse?"Type the term…":"Type the definition…"}/>{!answered&&<button className="btn btn-primary" onClick={()=>commit(norm(written)===norm(qData.correctAnswer))}>Check →</button>}</div>}
-      {answered&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12,marginTop:16}}><div className={`feedback-bar ${result==="correct"?"cor":"wrg"}`}><span>{result==="correct"?"✓":"✗"}</span><span>{result==="correct"?cp.mastered?"Card mastered! 🎉":`Correct! ${cp.correctStreak||0}/${MASTERY_THRESHOLD} streak`:`Correct answer: ${qData.correctAnswer}`}</span></div><button className="btn btn-primary" onClick={next}>Continue →</button></div>}
+      <div className="section-banner">
+        <div className="section-banner-left">
+          <h3>Section {sectionIdx + 1} of {sections.length}</h3>
+          <p>{qIdx + 1} of {queue.length} · streak {cp.correctStreak || 0}/{MASTERY_THRESHOLD}</p>
+        </div>
+        <div className="section-tag">{(progress[current.id]?.totalIncorrect || 0) > 1 ? "Needs work" : "Looking good"}</div>
+      </div>
+      <div className="section-dots">
+        {sections.map((_, i) => <div key={i} className={`sdot${i < sectionIdx ? " done" : i === sectionIdx ? " active" : ""}`}/>)}
+      </div>
+      <div className="prog-wrap">
+        <div className="prog-header"><span className="prog-label">Progress in section</span><span className="prog-count">{pct}%</span></div>
+        <div className="prog-track"><div className="prog-bar" style={{width:`${pct}%`}}/><div className="prog-thumb" style={{left:`${Math.max(Math.min(pct,96),2)}%`}}>{qIdx}</div></div>
+      </div>
+
+      <div className="learn-q-card pop-in">
+        <div className="learn-q-label">{qData.questionLabel}</div>
+        <div className={`learn-q-type-chip${chipCls}`}>{chipLabel}</div>
+        {qData.qtype === "tf" ? tfP : qData.isReverse
+          ? <div className="learn-q-def-text">{qData.questionText}</div>
+          : <div className="learn-q-text">{qData.questionText}</div>}
+      </div>
+
+      {/* MC options */}
+      {qData.qtype === "mc" && (
+        <div className="mc-grid">
+          {qData.options.map((opt, i) => {
+            const ic = opt === qData.correctAnswer;
+            const cls = answered ? (ic ? " cor" : chosen === opt ? " wrg" : "") : "";
+            return (
+              <button key={i} className={`mc-opt${cls}`} disabled={answered}
+                onClick={() => { setChosen(opt); commit(opt === qData.correctAnswer); }}>
+                <span className="opt-letter">{String.fromCharCode(65 + i)}</span><span>{opt}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* T/F options */}
+      {qData.qtype === "tf" && (
+        <div className="tf-grid">
+          {["True","False"].map(lbl => {
+            const ut = lbl === "True";
+            const cls = answered ? ((qData.isTrue === ut) ? " cor" : " wrg") : "";
+            return <button key={lbl} className={`tf-opt${cls}`} disabled={answered} onClick={() => commit(qData.isTrue === ut)}>{lbl === "True" ? "✓ True" : "✗ False"}</button>;
+          })}
+        </div>
+      )}
+
+      {/* Written answer — auto-expanding textarea */}
+      {qData.qtype === "written" && (
+        <div className="written-wrap">
+          <textarea
+            ref={inputRef}
+            rows={2}
+            className={`written-input${answered ? ` ${result === "correct" ? "cor" : "wrg"}` : ""}`}
+            value={written}
+            onChange={e => { setWritten(e.target.value); autoResize(e.target); }}
+            onKeyDown={e => { if (e.key === "Enter" && e.ctrlKey && !answered && !aiChecking) submitWritten(); }}
+            disabled={answered || aiChecking}
+            placeholder={`${qData.isReverse ? "Type the term…" : "Type the definition…"} (Ctrl+Enter to submit)`}
+          />
+          {!answered && !aiChecking && !pendingAI && (
+            <button className="btn btn-primary" disabled={!written.trim()} onClick={submitWritten}>Check →</button>
+          )}
+          {aiChecking && (
+            <div className="ai-checking"><div className="spinner"/>AI is checking for key concepts…</div>
+          )}
+          {/* "Similar" — show keywords and let student decide */}
+          {pendingAI && aiResult && (
+            <div style={{width:"100%",maxWidth:560,display:"flex",flexDirection:"column",gap:10}}>
+              <div className="ai-verdict-bar similar">
+                <span className="ai-verdict-icon">≈</span>
+                <div className="ai-verdict-body">
+                  <div>{aiResult.reason}</div>
+                  <KeywordBadges keywords={aiResult.keywords} />
+                </div>
+              </div>
+              <div style={{fontSize:11,color:"var(--text2)",textAlign:"center"}}>
+                Green = key concept found in your answer · Red = missing concept
+              </div>
+              <div className="ai-mark-row">
+                <button className="btn btn-danger" onClick={() => { setAiResult(null); setPendingAI(false); commit(false); }}>✗ Mark Wrong</button>
+                <button className="btn btn-teal" onClick={() => { setAiResult(null); setPendingAI(false); commit(true); }}>✓ Close Enough</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Feedback bar — shown after committing */}
+      {answered && (
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12,marginTop:16}}>
+          {/* AI verdict for auto-correct/wrong */}
+          {aiResult && !pendingAI && qData.qtype === "written" && (
+            <div className={`ai-verdict-bar ${result === "correct" ? "correct" : "wrong"}`} style={{maxWidth:560}}>
+              <span className="ai-verdict-icon">{result === "correct" ? "✓" : "✗"}</span>
+              <div className="ai-verdict-body">
+                <div>{aiResult.reason}</div>
+                <KeywordBadges keywords={aiResult.keywords} />
+              </div>
+            </div>
+          )}
+          <div className={`feedback-bar ${result === "correct" ? "cor" : "wrg"}`}>
+            <span>{result === "correct" ? "✓" : "✗"}</span>
+            <span>
+              {result === "correct"
+                ? cp.mastered ? "Card mastered! 🎉" : `Correct! ${cp.correctStreak || 0}/${MASTERY_THRESHOLD} streak`
+                : `Correct answer: ${qData.correctAnswer}`}
+            </span>
+          </div>
+          <button className="btn btn-primary" onClick={next}>Continue →</button>
+        </div>
+      )}
     </div>
   );
 }
-
 // ─── Exam ─────────────────────────────────────────────────────────────────────
 function ExamTab({ cards, progress, saveProgress, streak, playSound }) {
   const [deck]=useState(()=>shuffle([...cards]));
